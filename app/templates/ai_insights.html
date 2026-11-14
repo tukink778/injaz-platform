@@ -1,0 +1,12 @@
+{% extends "base.html" %}{% block title %}التحليلات الذكية{% endblock %}
+{% block content %}<div class="top"><div><h1>{{ m.ico('pie') }} التحليلات الذكية</h1><p class="muted">ملخص إداري مكتوب من أرقام نظامك: اتجاهات وتنبيهات وتفسير للمؤشرات. {{ scope_name }} · {{ now }}</p></div>
+<div class="btns noprint"><button class="btn" type="button" onclick="window.print()">{{ m.ico('file') }} طباعة / حفظ PDF</button><a class="btn" href="{{ url_for('reports.stats') }}">{{ m.ico('chart') }} الإحصائيات التفصيلية</a></div></div>
+<form method="get" class="card noprint" style="margin-bottom:16px"><div class="form-grid">
+{% if depts|length>1 %}<div class="fld"><label>القسم/المركز</label><select name="dept"><option value="">الكل</option>{% for d in depts %}<option value="{{d.id}}" {{ 'selected' if f.dept==d.id|string }}>{{ d.name_ar }}</option>{% endfor %}</select></div>{% endif %}
+<div class="fld"><label>السنة</label><select name="year"><option value="">الكل</option>{% for y in years %}<option {{ 'selected' if f.year==y }}>{{ y }}</option>{% endfor %}</select></div></div><div class="btns"><button class="btn pri">تطبيق</button></div></form>
+<div class="grid g4"><div class="card kpi"><div class="n">{{ S.total }}</div><div class="l">شهادة</div></div><div class="card kpi"><div class="n">{{ S.people }}</div><div class="l">مستفيد</div></div><div class="card kpi or"><div class="n">{{ '%g'|format(S.hours) }}</div><div class="l">ساعة</div></div><div class="card kpi"><div class="n">{{ S.events }}</div><div class="l">فعالية</div></div></div>
+<div class="card" style="margin-top:18px"><h2>{{ m.ico('spark') }} الملخص</h2><ul class="insights">{% for lvl,t in pts %}<li><span class="nlvl {{ 'warn' if lvl=='warn' else 'err' if lvl=='err' else 'ok' }}"></span>{{ t }}</li>{% endfor %}</ul></div>
+<div class="card" style="margin-top:18px"><h2>شرح مؤشرات الأداء</h2><dl class="kv">{% for k,v in kpi_help %}<dt>{{ k }}</dt><dd>{{ v }}</dd>{% endfor %}</dl>
+<div class="grid g4" style="margin-top:12px"><div><div class="muted small">الإصدار آلياً</div><b>{{ S.auto_pct }}%</b></div><div><div class="muted small">متوسط الزمن</div><b>{{ S.avg_hours }} س</b></div><div><div class="muted small">دقة Excel</div><b>{{ (S.accuracy ~ '%') if S.accuracy is not none else '—' }}</b></div><div><div class="muted small">التسليم بالبريد</div><b>{{ S.mail_pct }}%</b></div></div></div>
+<div class="grid g2" style="margin-top:18px"><div class="card"><h2>حسب الجهة</h2>{{ m.bars(S.by_dept) }}</div><div class="card"><h2>حسب الشهر</h2>{{ m.bars(S.by_month) }}</div></div>
+{% endblock %}

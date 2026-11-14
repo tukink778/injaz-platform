@@ -1,0 +1,5 @@
+{% extends "base.html" %}{% block title %}جارٍ التنفيذ{% endblock %}
+{% block content %}<div class="top"><div><h1>{{ 'إصدار الشهادات' if j.kind=='issue' else 'إرسال الشهادات' }}</h1><p class="muted">{{ ev.title_ar }}</p></div></div>
+<div class="card" data-job="{{ url_for('main.job_json', jid=j.id) }}"><div class="progress" role="progressbar" aria-label="تقدم العملية"><i></i></div><p class="muted small" style="margin:6px 0 0"><b data-jpct>0%</b></p>
+<p style="margin-top:14px"><span data-jspin>⏳ جارٍ العمل… لا تغلق الصفحة (يمكنك المغادرة، العملية تستمر)</span> <b data-jdone>{{ j.done }}</b> / {{ j.total }} · فشل: <b data-jfail>{{ j.failed }}</b></p>
+<p data-jmsg style="font-weight:700"></p><a class="btn pri" data-jback hidden href="{{ url_for('main.flow', eid=ev.id, step=7) }}">متابعة: الإرسال والأرشفة</a> <a class="btn" data-jback hidden href="{{ url_for('main.event_view', eid=ev.id) }}">العودة للفعالية</a></div>{% endblock %}

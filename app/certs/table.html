@@ -1,0 +1,40 @@
+{% extends "_base.html" %}
+{% block css %}
+.title-ar{top:22.4%;left:0;width:100%;font-size:21.5pt;font-weight:600;color:{{ cfg.accent }};text-align:center;line-height:1.3}
+.title-en{top:29.2%;left:0;width:100%;font-size:25pt;font-weight:500;color:{{ cfg.primary }};text-align:center;line-height:1.3}
+.intro{top:39.2%;width:43.3%;font-size:14.5pt;line-height:1.7;text-align:justify}
+.row .cell{position:absolute;display:flex;align-items:center;justify-content:center;text-align:center}
+.lab{background:{{ cfg.primary }};color:#fff;font-weight:500;font-size:12pt}
+.val{background:#e4e4e8;color:#111;font-size:14pt;font-weight:600;padding:0 2mm;line-height:1.2}
+.val.sm{font-size:12.5pt;font-weight:500}
+.closing{top:70.6%;width:43.3%;font-size:14.5pt;line-height:1.7}
+.who2{white-space:pre-line}
+{% endblock %}
+{% block body %}
+{% if cfg.bg_url %}<img class="bg" src="{{ cfg.bg_url }}">{% endif %}
+<div class="abs title-ar">{{ cfg.title_ar|kashida }}</div>
+<div class="abs title-en">{{ cfg.title_en }}</div>
+<div class="abs intro ar" style="left:52%">{{ cfg.intro_ar }}</div>
+<div class="abs intro en" style="left:5.1%">{{ cfg.intro_en }}</div>
+
+{% set rows = [ ('name', 51.5, 7.2, 'الاسم'|kashida(2), 'Name', names_ar, names_en, 'val', 'lab', 15) ] %}
+{% if cfg.show_uid and uid %}{% set _ = rows.append(('uid', 59.0, 5.0, 'الرقم الجامعي', 'University ID', uid, uid, 'val sm', 'lab', 12)) %}{% endif %}
+{% if cfg.show_spec and spec %}{% set _ = rows.append(('spec', 59.0 if not (cfg.show_uid and uid) else 64.4, 5.0, 'التخصص'|kashida(2), 'Specialization', spec, spec, 'val sm', 'lab', 12)) %}{% endif %}
+{% for key, top, h, lab_ar, lab_en, v_ar, v_en, vcls, lcls, fs in rows %}
+<div class="row">
+ <div class="cell lab" style="left:83.55%;top:{{top}}%;width:11.3%;height:{{h}}%;font-size:{{ 14 if key=='name' else 12 }}pt">{{ lab_ar }}</div>
+ <div class="cell lab" style="left:6.0%;top:{{top}}%;width:11.3%;height:{{h}}%;font-size:{{ 14 if key=='name' else 11 }}pt">{{ lab_en }}</div>
+ {% if v_ar and v_en and v_ar != v_en %}
+  <div class="cell {{vcls}} ar" style="left:50%;top:{{top}}%;width:33.3%;height:{{h}}%;justify-content:center;direction:rtl">{{ v_ar }}</div>
+  <div class="cell {{vcls}} en" style="left:17.6%;top:{{top}}%;width:32.2%;height:{{h}}%;justify-content:center;direction:ltr">{{ v_en }}</div>
+ {% else %}
+  <div class="cell {{vcls}}" style="left:17.6%;top:{{top}}%;width:65.7%;height:{{h}}%;direction:auto">{{ v_ar or v_en }}</div>
+ {% endif %}
+</div>
+{% endfor %}
+
+<div class="abs closing ar" style="left:52%">{{ cfg.closing_ar|fill(ctx) }}</div>
+<div class="abs closing en" style="left:5.1%">{{ cfg.closing_en|fill(ctx) }}</div>
+
+{% include "_bottom.html" %}
+{% endblock %}

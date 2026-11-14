@@ -1,0 +1,14 @@
+{% extends "base.html" %}{% block title %}الإعدادات{% endblock %}
+{% block content %}<div class="top"><div><h1>الإعدادات</h1></div></div>
+<form method="post" class="grid">{{ m.csrf() }}
+<div class="card"><h2>{{ m.ico('shield') }} الأمان والخصوصية</h2>
+<label class="chk"><input type="checkbox" name="require_2fa" {{ 'checked' if s.require_2fa=='1' }}> إلزام المشرفين العامين بالتحقق بخطوتين (2FA)</label>
+<label class="chk"><input type="checkbox" name="ai_enabled" {{ 'checked' if s.ai_enabled=='1' }}> تفعيل أدوات الذكاء (المساعد، محلل البيانات، مصمم الشهادات، التحليلات). تعمل محلياً على الخادم ولا تُرسل أي بيانات لجهات خارجية، وهي غير متاحة لدور «مطّلع».</label>
+<div class="fld" style="max-width:420px"><label>ما يظهر في صفحة التحقق العامة</label><select name="verify_name_mode"><option value="masked" {{'selected' if s.verify_name_mode=='masked'}}>اسم مخفي جزئياً (محمد س. ع.) — موصى به</option><option value="hidden" {{'selected' if s.verify_name_mode=='hidden'}}>بدون اسم</option><option value="full" {{'selected' if s.verify_name_mode=='full'}}>الاسم كاملاً</option></select></div>
+<div class="fld" style="max-width:220px"><label>مدة صلاحية رابط التحميل (يوم)</label><input type="number" name="token_days" min="1" max="730" value="{{ s.token_days }}"></div></div>
+<div class="card"><h2>{{ m.ico('mail') }} البريد</h2><p class="small muted">الخادم: <b class="ltr">{{ Cfg.SMTP_HOST or '— غير مضبوط (وضع الاختبار: حفظ في data/outbox) —' }}</b> · يُضبط عبر ملف .env للأمان (لا تُخزَّن كلمة سر البريد في قاعدة البيانات).</p>
+<label class="chk"><input type="checkbox" name="attach_pdf" {{ 'checked' if s.attach_pdf=='1' }}> إرفاق ملف PDF بالرسالة (وإلا يُرسل رابط تحميل آمن فقط — أفضل للخصوصية)</label>
+<div class="fld"><label>عنوان الرسالة</label><input name="email_subject" value="{{ s.email_subject }}"></div>
+<div class="fld"><label>نص الرسالة</label><textarea name="email_body" style="min-height:200px">{{ s.email_body }}</textarea><div class="hint">المتغيرات: {name} {event} {dept} {link} {serial} {code}</div></div>
+<div class="fld"><label>رابط استبيان الرضا (اختياري، https)</label><input name="survey_url" class="ltr" value="{{ s.survey_url }}"></div></div>
+<button class="btn pri" style="justify-self:start">{{ m.ico('check') }} حفظ الإعدادات</button></form>{% endblock %}

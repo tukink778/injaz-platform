@@ -1,0 +1,17 @@
+{% extends "base.html" %}{% block title %}حسابي{% endblock %}
+{% block content %}<div class="top"><div><h1>حسابي</h1><p class="muted">{{ g.user.full_name }} — <span class="ltr">{{ g.user.username }}</span></p></div></div>
+<div class="grid g2"><div class="card"><h2>تغيير كلمة المرور</h2>
+{% if g.user.must_change_pw %}<div class="flash warn">يجب تغيير كلمة المرور المؤقتة أولاً</div>{% endif %}
+<form method="post">{{ m.csrf() }}<input type="hidden" name="act" value="pw">
+<div class="fld"><label>كلمة المرور الحالية</label><input type="password" name="old" required class="ltr" autocomplete="current-password"></div>
+<div class="fld"><label>الجديدة</label><input type="password" name="new" required minlength="12" class="ltr" autocomplete="new-password"><div class="hint">12 حرفاً على الأقل: حرف كبير وصغير ورقم</div></div>
+<div class="fld"><label>تأكيد الجديدة</label><input type="password" name="new2" required class="ltr" autocomplete="new-password"></div>
+<button class="btn pri">حفظ</button></form></div>
+<div class="card"><h2>التحقق بخطوتين (2FA)</h2>
+{% if g.user.totp_secret %}<p><span class="badge ok">مُفعّل</span></p>
+<form method="post" data-confirm="إيقاف التحقق بخطوتين؟">{{ m.csrf() }}<input type="hidden" name="act" value="2fa_off"><div class="fld"><label>كلمة المرور للتأكيد</label><input type="password" name="old" required class="ltr"></div><button class="btn danger">إيقاف</button></form>
+{% elif qr %}<p>امسح الرمز بتطبيق Google Authenticator أو Microsoft Authenticator ثم أدخل الرمز:</p><div class="qr-big" style="padding:6px"><img src="{{ qr }}" alt="QR" style="width:180px"></div>
+<p class="small muted ltr" style="text-align:center">{{ secret }}</p>
+<form method="post">{{ m.csrf() }}<input type="hidden" name="act" value="2fa_confirm"><div class="fld"><input name="code" inputmode="numeric" class="ltr" placeholder="000000" required></div><button class="btn pri">تفعيل</button></form>
+{% else %}<p class="muted">طبقة حماية إضافية: بعد كلمة المرور يُطلب رمز يتغير كل 30 ثانية. يوصى به بشدة للمشرفين والمديرين.</p>
+<form method="post">{{ m.csrf() }}<input type="hidden" name="act" value="2fa_start"><button class="btn or">{{ m.ico('shield') }} بدء التفعيل</button></form>{% endif %}</div></div>{% endblock %}

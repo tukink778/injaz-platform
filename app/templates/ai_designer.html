@@ -1,0 +1,14 @@
+{% extends "base.html" %}{% block title %}مصمم الشهادات الذكي{% endblock %}
+{% block content %}<div class="top"><div><h1>{{ m.ico('layers') }} مصمم الشهادات الذكي</h1><p class="muted">يقترح ألواناً متناسقة (مع فحص التباين) وتوزيعاً مناسباً للشهادة. يمكن للمشرف تحويل أي اقتراح إلى قالب جاهز للتعديل.</p></div></div>
+<div class="card"><form method="post">{{ m.csrf() }}<div class="form-grid">
+<div class="fld"><label>طابع الشهادة</label><select name="mood">{% for k,v in MOODS.items() %}<option value="{{ k }}" {{ 'selected' if f.get('mood')==k }}>{{ v[0] }}</option>{% endfor %}</select></div>
+<div class="fld"><label>لون أساسي (اختياري)</label><input type="color" name="base" value="{{ f.get('base') or '#29328d' }}"></div>
+<div class="fld"><label>الاتجاه</label><select name="orientation"><option value="landscape" {{ 'selected' if f.get('orientation')!='portrait' }}>أفقي A4</option><option value="portrait" {{ 'selected' if f.get('orientation')=='portrait' }}>عمودي A4</option></select></div></div>
+<div class="btns"><button class="btn pri">{{ m.ico('spark') }} اقترح تصميمات</button></div></form></div>
+{% if res %}<div class="grid g3" style="margin-top:18px">{% for s in res['items'] %}<div class="card"><h3>{{ s.label }}</h3><p class="small muted">{{ s.why }}</p>
+<div class="swatch"><i style="background:{{ s.primary }}"></i><i style="background:{{ s.accent }}"></i></div>
+<div class="mini" style="--p:{{ s.primary }};--a:{{ s.accent }}"><b></b><u></u><s></s><s></s></div>
+<p class="small">الأساسي <code class="ltr">{{ s.primary }}</code> · المميز <code class="ltr">{{ s.accent }}</code><br>تباين النص الأبيض على الأساسي: <b>{{ s.contrast }}:1</b> <span class="badge {{ 'ok' if s.contrast>=4.5 else 'warn' }}">{{ 'ممتاز' if s.contrast>=4.5 else 'ضعيف' }}</span></p>
+{% if g.user.role=='admin' %}<form method="post" action="{{ url_for('ai.designer_create') }}">{{ m.csrf() }}<input type="hidden" name="primary" value="{{ s.primary }}"><input type="hidden" name="accent" value="{{ s.accent }}"><input type="hidden" name="layout" value="{{ s.layout }}"><input type="hidden" name="orientation" value="{{ s.orientation }}"><input type="hidden" name="mood_name" value="{{ res.mood_name }} · {{ s.label }}"><button class="btn sm pri">{{ m.ico('plus') }} إنشاء قالب بهذا التصميم</button></form>{% else %}<p class="small muted">إنشاء القوالب للمشرف العام.</p>{% endif %}</div>{% endfor %}</div>
+<div class="card" style="margin-top:18px"><h2>نصائح التركيب والخطوط</h2><ul style="line-height:2">{% for t in res.tips %}<li>{{ t }}</li>{% endfor %}</ul></div>{% endif %}
+{% endblock %}

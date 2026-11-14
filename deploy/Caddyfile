@@ -1,0 +1,7 @@
+# استبدل الدومين بدومينك الحقيقي. يوجّه DNS (سجل A) إلى عنوان السيرفر قبل التشغيل.
+injaz.example.edu {
+	encode zstd gzip
+	request_body { max_size 8MB }
+	reverse_proxy injaz:8080
+	# لا حاجة لإعدادات CORS: الواجهة والخلفية من نفس الأصل. لا تضف ترويسات Access-Control.
+}

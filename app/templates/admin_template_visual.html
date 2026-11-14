@@ -1,0 +1,23 @@
+{% extends "base.html" %}{% block title %}محرر القالب{% endblock %}
+{% block content %}
+<div class="top"><div><h1>محرر القالب المرئي</h1><p class="muted">اسحب العناصر على الشهادة، وعدّل خصائصها من اللوحة الجانبية. {{ ne }} فعالية · {{ nc }} شهادة صادرة بهذا القالب (لن تتغير).</p></div>
+<div class="btns"><input id="tname" value="{{ t.name }}" maxlength="80" style="width:220px" aria-label="اسم القالب"><button class="btn" id="b-prev" type="button">{{ m.ico('eye') }} معاينة دقيقة</button>
+<button class="btn pri" id="b-save" type="button">{{ m.ico('check') }} حفظ <span class="badge or dirty" id="dirty">غير محفوظ</span></button>
+<form method="post" action="{{ url_for('admin.template_duplicate', tid=t.id) }}" data-nolock>{{ m.csrf() }}<button class="btn">{{ m.ico('dup') }} حفظ كنسخة</button></form>
+<a class="btn" href="{{ url_for('admin.templates') }}">رجوع</a></div></div>
+<div id="draftbar" class="flash warn" hidden>وُجدت مسودة غير محفوظة لهذا القالب. <button class="btn sm" type="button" id="d-restore">استعادة</button> <button class="btn sm" type="button" id="d-drop">تجاهل</button></div>
+<script type="application/json" id="cfgdata">{{ cfg|tojson }}</script>
+<script type="application/json" id="phdata">{{ placeholders|tojson }}</script>
+<div class="ed" data-save="{{ url_for('admin.template_edit', tid=t.id) }}" data-live="{{ url_for('admin.template_live') }}" data-asset="{{ url_for('admin.template_asset') }}" data-tid="{{ t.id }}" data-csrf="{{ csrf_token() }}">
+ <aside class="panel tools-p" aria-label="الأدوات">
+  <h3>إضافة عنصر</h3><div class="tools"><button class="btn" type="button" data-add="text">{{ m.ico('type') }} نص</button><button class="btn" type="button" data-add="image">{{ m.ico('img') }} صورة</button><button class="btn" type="button" data-add="qr">{{ m.ico('qr') }} رمز QR</button><button class="btn" type="button" data-add="rect">{{ m.ico('tpl') }} شكل</button></div>
+  <h3>الطبقات <span class="muted small">(الأعلى = الأمام)</span></h3><div id="layers"></div>
+  <h3>تحكم</h3><div class="btns"><button class="btn sm" type="button" id="b-undo" title="Ctrl+Z">تراجع</button><button class="btn sm" type="button" id="b-redo" title="Ctrl+Y">إعادة</button><button class="btn sm" type="button" id="b-dup" title="Ctrl+D">{{ m.ico('dup') }}</button><button class="btn sm danger" type="button" id="b-del" title="Delete">{{ m.ico('trash') }}</button></div>
+  <p class="hint">مفاتيح الأسهم تحرّك العنصر، وShift لخطوة أكبر. Alt أثناء السحب يعطّل المحاذاة.</p>
+ </aside>
+ <div class="stage"><div class="cv" id="cv" aria-label="لوحة التصميم"></div></div>
+ <aside class="panel" id="props" aria-label="الخصائص"></aside>
+</div>
+<dialog id="dlg-prev" style="width:min(900px,96vw)"><div class="dh"><h2 style="margin:0">المعاينة الدقيقة (كما ستظهر في PDF)</h2></div><div class="db"><span class="skel" id="prev-skel"></span><img id="prev-img" class="prev" alt="" hidden></div><div class="df"><button class="btn pri" type="button" data-no>إغلاق</button></div></dialog>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/editor.js') }}"></script>{% endblock %}

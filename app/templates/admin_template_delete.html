@@ -1,0 +1,7 @@
+{% extends "base.html" %}{% block title %}حذف قالب{% endblock %}
+{% block content %}<div class="top"><div><h1>حذف القالب</h1><p class="muted">{{ t.name }}</p></div></div>
+<div class="card" style="max-width:640px"><div class="flash {{ 'warn' if ne else 'ok' }}">{% if ne %}هذا القالب مرتبط بـ <b>{{ ne }}</b> فعالية و<b>{{ nc }}</b> شهادة صادرة. لحماية السجلات التاريخية يجب نقل الفعاليات إلى قالب بديل قبل الحذف.{% else %}القالب غير مستخدم في أي فعالية، ويمكن حذفه بأمان.{% endif %}</div>
+<p class="small muted">ملفات الشهادات الصادرة (PDF) محفوظة كما هي ولن تتغير بأي حال. النقل يغيّر القالب المستخدم عند أي إعادة إصدار أو معاينة مستقبلية للفعاليات المنقولة.</p>
+<form method="post">{{ m.csrf() }}<input type="hidden" name="confirm" value="yes">
+{% if ne %}<div class="fld"><label>نقل الفعاليات إلى القالب *</label><select name="reassign" required><option value="">— اختر —</option>{% for o in others %}<option value="{{ o.id }}">{{ o.name }}</option>{% endfor %}</select></div>{% endif %}
+<div class="btns"><button class="btn danger" data-confirm="حذف القالب نهائياً؟ لا يمكن التراجع.">{{ m.ico('trash') }} تأكيد الحذف</button><a class="btn" href="{{ url_for('admin.templates') }}">إلغاء</a></div></form></div>{% endblock %}

@@ -1,0 +1,2 @@
+{% extends "base_public.html" %}{% block title %}رابط غير صالح{% endblock %}
+{% block content %}<div class="card" style="text-align:center"><div class="seal err">✕</div><h1>الرابط غير صالح أو منتهٍ</h1><p class="muted">يمكنك الحصول على رابط جديد من بوابة المشاركين.</p><a class="btn pri" href="{{ url_for('public.portal') }}">بوابة المشاركين</a></div>{% endblock %}

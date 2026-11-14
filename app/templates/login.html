@@ -1,0 +1,7 @@
+{% extends "base_public.html" %}{% block title %}تسجيل الدخول{% endblock %}
+{% block content %}<div class="card"><h1>تسجيل الدخول</h1><p class="muted">منصة إنجاز لإصدار وإدارة الشهادات الإلكترونية</p>
+<form method="post" autocomplete="off">{{ m.csrf() }}
+<div class="fld"><label>اسم المستخدم</label><input name="username" required autofocus autocomplete="username" class="ltr"></div>
+<div class="fld"><label>كلمة المرور</label><input type="password" name="password" required autocomplete="current-password" class="ltr"></div>
+<button class="btn pri" style="width:100%;justify-content:center">دخول</button></form>
+<p class="small muted" style="margin-top:16px">للتحقق من شهادة: <a href="{{ url_for('public.verify_form') }}">صفحة التحقق</a> · للحصول على شهادتك: <a href="{{ url_for('public.portal') }}">بوابة المشاركين</a></p></div>{% endblock %}

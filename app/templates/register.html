@@ -1,0 +1,13 @@
+{% extends "base_public.html" %}{% import '_m.html' as m %}{% block title %}تسجيل الحضور{% endblock %}
+{% block content %}<div class="card"><div class="badge or">تسجيل حضور · Attendance</div><h1 style="margin-top:8px">{{ ev.title_ar }}</h1>
+{% if ev.title_en %}<div class="ltr muted">{{ ev.title_en }}</div>{% endif %}<p class="muted small">{{ ev.dept_ar }} · {{ ev.event_date }}</p>
+<form method="post" autocomplete="off">{{ m.csrf() }}
+<div class="hp" aria-hidden="true"><label>website</label><input name="website" tabindex="-1" autocomplete="off"></div>
+<div class="fld"><label>الاسم الكامل / Full name *</label><input name="name" required maxlength="120" value="{{ v.get('name','') }}" autocomplete="name"></div>
+<div class="fld"><label>الاسم بالإنجليزية / English name <span class="muted">(اختياري)</span></label><input name="name_en" class="ltr" maxlength="120" value="{{ v.get('name_en','') }}"></div>
+<div class="fld"><label>الرقم الجامعي / University ID {{ '*' if ev.require_uid }}</label><input name="uid" class="ltr" maxlength="24" {{ 'required' if ev.require_uid }} value="{{ v.get('uid','') }}"></div>
+<div class="fld"><label>البريد الإلكتروني / Email *</label><input type="email" name="email" required class="ltr" maxlength="120" value="{{ v.get('email','') }}"><div class="hint">سنرسل شهادتك على هذا البريد</div></div>
+<div class="fld"><label>التخصص / Specialization {{ '*' if ev.require_spec }}</label><input name="spec" maxlength="80" {{ 'required' if ev.require_spec }} value="{{ v.get('spec','') }}"></div>
+{{ m.demo_fields(v, True) }}
+{% if ev.reg_pin %}<div class="fld"><label>رمز الحضور / Attendance code *</label><input name="pin" required class="ltr" maxlength="12"><div class="hint">يعلنه المنظم في القاعة</div></div>{% endif %}
+<button class="btn or" style="width:100%;justify-content:center">تسجيل الحضور · Register</button></form></div>{% endblock %}

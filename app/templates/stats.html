@@ -1,0 +1,14 @@
+{% extends "base.html" %}{% block title %}الإحصائيات{% endblock %}
+{% block content %}<div class="top"><div><h1>الإحصائيات</h1><p class="muted">من حصل على ماذا، وفي أي تخصص وقسم — مجمّعة وجاهزة للتقارير.</p></div></div>
+{% call m.filters(f, depts, years, specs, cats, False) %}<a class="btn" href="{{ url_for('reports.export_stats', **request.args) }}">{{ m.ico('xls') }} تصدير Excel</a>{% endcall %}
+<div class="grid g4"><div class="card kpi"><div class="n">{{ S.total }}</div><div class="l">شهادة صادرة</div></div><div class="card kpi"><div class="n">{{ S.people }}</div><div class="l">مستفيد (أشخاص)</div></div>
+<div class="card kpi or"><div class="n">{{ '%g'|format(S.hours) }}</div><div class="l">إجمالي الساعات</div></div><div class="card kpi"><div class="n">{{ S.events }}</div><div class="l">فعالية · {{ S.depts }} جهة</div></div></div>
+<div class="card"><h2>مؤشرات الأداء (KPIs)</h2><div class="grid g4">
+<div><div class="muted small">نسبة الإصدار آلياً (QR/Excel)</div><b style="font-size:1.4rem">{{ S.auto_pct }}%</b></div><div><div class="muted small">متوسط الزمن من التسجيل للإصدار</div><b style="font-size:1.4rem">{{ S.avg_hours }} ساعة</b></div>
+<div><div class="muted small">دقة بيانات Excel</div><b style="font-size:1.4rem">{{ (S.accuracy ~ '%') if S.accuracy is not none else '—' }}</b></div><div><div class="muted small">نسبة التسليم بالبريد</div><b style="font-size:1.4rem">{{ S.mail_pct }}%</b></div></div></div>
+<div class="grid g2" style="margin-top:18px"><div class="card"><h2>حسب القسم/المركز</h2>{{ m.bars(S.by_dept) }}</div><div class="card"><h2>حسب التخصص</h2>{{ m.bars(S.by_spec,'o') }}</div>
+<div class="card"><h2>حسب نوع النشاط</h2>{{ m.bars(S.by_cat) }}</div><div class="card"><h2>حسب نوع الشهادة (القالب)</h2>{{ m.bars(S.by_tpl,'o') }}</div></div>
+<div class="card"><h2>الشهادات شهرياً</h2>{% set mx = (S.by_month|map(attribute=1)|max) if S.by_month else 1 %}<div class="cols">{% for mo,n in S.by_month %}<div class="c"><b>{{ n }}</b><i style="height:{{ (100*n/mx)|round }}%"></i><span>{{ mo }}</span></div>{% else %}<div class="empty" style="width:100%">لا توجد بيانات</div>{% endfor %}</div></div>
+<div class="grid g2" style="margin-top:18px"><div class="card"><h2>أكثر الفعاليات حضوراً</h2><div class="tbl-wrap"><table>{% for t,d,n in S.top_events %}<tr><td>{{ t }}</td><td class="muted small">{{ d }}</td><td><b>{{ n }}</b></td></tr>{% else %}<tr><td class="empty">—</td></tr>{% endfor %}</table></div></div>
+<div class="card"><h2>مصدر التسجيل</h2>{{ m.bars([('QR',S.by_source.qr),('Excel',S.by_source.excel),('يدوي',S.by_source.manual)]) }}
+{% if top_people %}<h2 style="margin-top:18px">الأكثر حصولاً على شهادات</h2><table>{% for n,c,h,k in top_people %}<tr><td><a href="{{ url_for('reports.person', uid_idx=k) }}">{{ n }}</a></td><td>{{ c }} شهادة</td><td class="muted">{{ '%g'|format(h) }} س</td></tr>{% endfor %}</table>{% endif %}</div></div>{% endblock %}

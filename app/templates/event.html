@@ -1,0 +1,27 @@
+{% extends "base.html" %}{% block title %}{{ ev.title_ar }}{% endblock %}
+{% block content %}
+<div class="top"><div><h1>{{ ev.title_ar }}</h1><p class="muted">{{ ev.dept_ar }} · {{ CATEGORIES[ev.category] }} · {{ ev.event_date }}{% if ev.end_date %} → {{ ev.end_date }}{% endif %} · {{ '%g'|format(ev.hours) }} ساعة · القالب: {{ tpl_name }}</p></div>
+<div class="btns">{% if g.user.role!='viewer' %}<a class="btn" href="{{ url_for('main.event_edit', eid=ev.id) }}">تعديل</a>{% endif %}<span class="badge {{ 'ok' if ev.status=='issued' else 'or' if ev.status=='open' }}">{{ STATUS_AR[ev.status] }}</span></div></div>
+{% set np = parts|length if not flt else (cnt.values()|sum) %}
+<div class="steps"><div class="s {{ 'done' if cnt.values()|sum else 'cur' }}">① المشاركون</div><div class="s {{ 'done' if cnt.get('approved') else ('cur' if cnt.values()|sum else '') }}">② المراجعة والاعتماد</div><div class="s {{ 'done' if ncert else ('cur' if cnt.get('approved') else '') }}">③ الإصدار</div><div class="s {{ 'done' if nsent else ('cur' if ncert else '') }}">④ الإرسال</div></div>
+{% if g.user.role!='viewer' %}
+<div class="grid g3">
+<div class="card"><h3>{{ m.ico('qr') }} التسجيل بالـ QR</h3><p class="small muted">{{ 'مفتوح الآن' if ev.reg_open else 'مغلق' }} · تسجيلات: {{ cnt.values()|sum }}</p>
+<div class="btns"><form method="post" action="{{ url_for('main.reg_toggle', eid=ev.id) }}">{{ m.csrf() }}<button class="btn sm {{ 'danger' if ev.reg_open else 'pri' }}">{{ 'إغلاق التسجيل' if ev.reg_open else 'فتح التسجيل' }}</button></form>
+<a class="btn sm" href="{{ url_for('main.event_qr', eid=ev.id) }}">عرض/طباعة QR</a></div></div>
+<div class="card"><h3>{{ m.ico('xls') }} رفع Excel</h3><p class="small muted">أضف المشاركين دفعة واحدة من قالب موحد.</p><div class="btns"><a class="btn sm pri" href="{{ url_for('main.import_view', eid=ev.id) }}">رفع ملف</a><a class="btn sm" href="{{ url_for('main.template_xlsx') }}">تحميل القالب</a></div></div>
+<div class="card"><h3>{{ m.ico('plus') }} إضافة يدوية</h3><p class="small muted">لحالات فردية أو متأخرة.</p><a class="btn sm" href="#add">إضافة مشارك</a></div></div>{% endif %}
+{% include '_parts.html' %}
+{% if g.user.role!='viewer' %}
+<div class="card" id="add"><h2>إضافة مشارك يدوياً</h2><form method="post" action="{{ url_for('main.part_add', eid=ev.id) }}">{{ m.csrf() }}<div class="form-grid">
+<div class="fld"><label>الاسم الكامل *</label><input name="name" required></div><div class="fld"><label>Name (English)</label><input name="name_en" class="ltr"></div>
+<div class="fld"><label>الرقم الجامعي</label><input name="uid" class="ltr"></div><div class="fld"><label>البريد الإلكتروني *</label><input type="email" name="email" required class="ltr"></div>
+<div class="fld"><label>التخصص</label><input name="spec"></div>{{ m.demo_fields({}, True) }}</div><button class="btn">إضافة</button></form></div>
+<div class="card"><div class="grid g2"><div><h2>{{ m.ico('shield') }} الإصدار والإرسال</h2>
+<p class="muted">بانتظار الإصدار: <b>{{ to_issue }}</b> · صادرة: <b>{{ ncert }}</b> · أُرسلت: <b>{{ nsent }}</b></p>
+<div class="btns"><form method="post" action="{{ url_for('main.issue', eid=ev.id) }}">{{ m.csrf() }}<button class="btn or" {{ 'disabled' if not to_issue }} data-confirm="إصدار {{ to_issue }} شهادة؟">{{ m.ico('check') }} إصدار الشهادات ({{ to_issue }})</button></form>
+<form method="post" action="{{ url_for('main.send', eid=ev.id) }}">{{ m.csrf() }}<button class="btn pri" {{ 'disabled' if not (ncert-nsent) or not mail_ok }} data-confirm="إرسال الشهادات للبريد؟">{{ m.ico('mail') }} إرسال للبريد ({{ ncert-nsent }})</button></form></div>
+{% if mail_mode=='file' %}<p class="small muted">⚠ وضع الاختبار: الرسائل تُحفظ في مجلد data/outbox ولا تُرسل فعلياً حتى تضبط SMTP.</p>{% endif %}</div>
+<div><h2>{{ m.ico('dl') }} التصدير</h2><div class="btns"><a class="btn" href="{{ url_for('main.event_zip', eid=ev.id) }}">ZIP (ملف لكل شهادة)</a><a class="btn" href="{{ url_for('main.event_print', eid=ev.id) }}" target="_blank">PDF واحد للطباعة</a></div></div></div></div>
+{% if g.user.role in ('admin','manager') %}<form method="post" action="{{ url_for('main.event_delete', eid=ev.id) }}" data-confirm="حذف الفعالية ومشاركيها نهائياً؟" style="margin-top:14px">{{ m.csrf() }}<button class="btn sm danger">حذف الفعالية</button></form>{% endif %}
+{% endif %}{% endblock %}

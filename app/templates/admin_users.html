@@ -1,0 +1,16 @@
+{% extends "base.html" %}{% block title %}المستخدمون{% endblock %}
+{% block content %}<div class="top"><div><h1>المستخدمون والصلاحيات</h1><p class="muted">كل مستخدم يرى بيانات قسمه فقط (عدا المشرف العام).</p></div></div>
+{% if newpw %}<div class="flash warn"><b>كلمة مرور مؤقتة لـ {{ newpw[0] }}:</b> <span class="mono">{{ newpw[1] }}</span> — تُعرض مرة واحدة فقط، سلّمها للمستخدم بشكل آمن (سيُجبر على تغييرها).</div>{% endif %}
+<div class="card"><h2>إضافة مستخدم</h2><form method="post">{{ m.csrf() }}<input type="hidden" name="act" value="create"><div class="form-grid">
+<div class="fld"><label>اسم المستخدم</label><input name="username" required class="ltr" pattern="[A-Za-z0-9._\-]+"></div><div class="fld"><label>الاسم الكامل</label><input name="full_name" required></div>
+<div class="fld"><label>البريد</label><input type="email" name="email" class="ltr"></div>
+<div class="fld"><label>الدور</label><select name="role">{% for k,v in roles.items() %}<option value="{{k}}" {{'selected' if k=='organizer'}}>{{v}}</option>{% endfor %}</select></div>
+<div class="fld"><label>القسم/المركز</label><select name="dept_id"><option value="">—</option>{% for d in depts %}<option value="{{d.id}}">{{d.name_ar}}</option>{% endfor %}</select></div></div><button class="btn pri">{{ m.ico('plus') }} إنشاء</button></form></div>
+<div class="card"><div class="tbl-wrap"><table><tr><th>المستخدم</th><th>الدور</th><th>القسم</th><th>2FA</th><th>آخر دخول</th><th>الحالة</th><th></th></tr>
+{% for u in us %}<tr><td><b>{{ u.full_name }}</b><br><span class="small muted ltr">{{ u.username }}</span></td>
+<td><form method="post" class="btns">{{ m.csrf() }}<input type="hidden" name="act" value="role"><input type="hidden" name="uid" value="{{ u.id }}"><select name="role" style="width:auto">{% for k,v in roles.items() %}<option value="{{k}}" {{'selected' if k==u.role}}>{{v}}</option>{% endfor %}</select>
+<select name="dept_id" style="width:auto"><option value="">—</option>{% for d in depts %}<option value="{{d.id}}" {{'selected' if d.id==u.dept_id}}>{{d.name_ar}}</option>{% endfor %}</select>{% if u.id!=g.user.id %}<button class="btn sm">حفظ</button>{% endif %}</form></td>
+<td>{{ m.ico('shield') if u.totp_secret }}{{ '' if u.totp_secret else '—' }}</td><td class="small">{{ ts_fmt(u.last_login) }}</td><td><span class="badge {{ 'ok' if u.active else 'err' }}">{{ 'فعّال' if u.active else 'موقوف' }}</span>{% if u.locked_until %}<span class="badge warn">مقفل</span>{% endif %}</td>
+<td><form method="post" class="btns">{{ m.csrf() }}<input type="hidden" name="uid" value="{{ u.id }}"><button class="btn sm" name="act" value="reset" data-confirm="إعادة تعيين كلمة المرور؟">كلمة مرور جديدة</button>
+{% if u.totp_secret %}<button class="btn sm" name="act" value="reset2fa" data-confirm="إلغاء 2FA لهذا المستخدم؟">إلغاء 2FA</button>{% endif %}<button class="btn sm" name="act" value="unlock">فك القفل</button>
+{% if u.id!=g.user.id %}<button class="btn sm danger" name="act" value="toggle">{{ 'إيقاف' if u.active else 'تفعيل' }}</button>{% endif %}</form></td></tr>{% endfor %}</table></div></div>{% endblock %}

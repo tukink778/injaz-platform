@@ -1,0 +1,26 @@
+# تشغيل: انسخ .env.example إلى .env وعبّئه، ثم:
+#   docker compose up -d --build
+#   docker compose exec injaz python manage.py init      # مرة واحدة: ينشئ حساب المشرف
+# HTTPS: يتولاه Caddy تلقائياً (شهادة Let's Encrypt) عند ضبط الدومين في deploy/Caddyfile.
+services:
+  injaz:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      INJAZ_HOST: 0.0.0.0
+      INJAZ_BEHIND_PROXY: "0"   # الوكيل في حاوية أخرى؛ ثقة ترويسات X-Forwarded تُفعَّل فقط لوكيل على 127.0.0.1
+    volumes:
+      - injaz-data:/app/data
+    expose: ["8080"]
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports: ["80:80", "443:443"]
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+    depends_on: [injaz]
+volumes:
+  injaz-data:
+  caddy-data:

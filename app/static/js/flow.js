@@ -1,0 +1,3 @@
+(function(){var s=document.currentScript,box=document.getElementById('pvbox');if(!box)return;
+var img=new Image();img.className='prev';img.alt='معاينة الشهادة';img.onload=function(){box.innerHTML='';box.appendChild(img)};img.onerror=function(){box.innerHTML='<div class="flash err">تعذّرت المعاينة. تحقق من القالب وحاول مجدداً.</div>'};img.src=s.dataset.src;
+var g=document.querySelector('[data-gate]');if(g)g.addEventListener('change',function(){var t=document.querySelector(g.dataset.gate);t.style.pointerEvents=g.checked?'auto':'none';t.style.opacity=g.checked?1:.5;t.setAttribute('aria-disabled',!g.checked)})})();

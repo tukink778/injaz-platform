@@ -1,0 +1,5 @@
+{% extends "base.html" %}{% block title %}سجل التدقيق{% endblock %}
+{% block content %}<div class="top"><div><h1>سجل التدقيق</h1><p class="muted">كل عملية حساسة مسجّلة بسلسلة تجزئة: أي تعديل أو حذف للسجل يُكشف.</p></div><a class="btn pri" href="?verify=1">{{ m.ico('shield') }} فحص سلامة السجل</a></div>
+{% if ok is not none %}<div class="flash {{ 'ok' if ok else 'err' }}">{{ 'السجل سليم — لم يُعبث به ✔' if ok else '⚠ تم اكتشاف عبث في السجل عند البند رقم ' ~ bad }}</div>{% endif %}
+<form class="card" method="get" style="margin-bottom:14px"><div class="btns"><input name="q" value="{{ q }}" placeholder="إجراء، مستخدم، هدف…" style="max-width:340px"><button class="btn">بحث</button></div></form>
+<div class="tbl-wrap"><table><tr><th>الوقت</th><th>المستخدم</th><th>الإجراء</th><th>الهدف</th><th>التفاصيل</th><th>IP</th></tr>{% for r in rows %}<tr><td class="nowrap small">{{ ts_fmt(r.ts, '%Y-%m-%d %H:%M:%S') }}</td><td>{{ r.username }}</td><td><span class="badge">{{ r.action }}</span></td><td class="small mono">{{ r.target }}</td><td class="small">{{ r.detail }}</td><td class="small mono">{{ r.ip }}</td></tr>{% endfor %}</table></div>{% endblock %}

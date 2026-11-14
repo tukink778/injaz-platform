@@ -1,0 +1,34 @@
+{% extends "_base.html" %}
+{% block css %}
+.t-ar{top:17.5%;left:0;width:100%;text-align:center;font-size:27pt;font-weight:700;color:{{ cfg.accent }};line-height:1.3}
+.t-en{top:26.2%;left:0;width:100%;text-align:center;font-size:17pt;font-weight:500;color:{{ cfg.primary }};letter-spacing:.2px}
+.blk{left:8%;width:84%;text-align:center;font-size:14.5pt;line-height:1.85}
+.blk.en{font-size:13pt;line-height:1.8;color:#222}
+.nm{left:8%;width:84%;text-align:center;font-weight:700;color:{{ cfg.primary }}}
+{% endblock %}
+{% block body %}
+{% if cfg.bg_url %}<img class="bg" src="{{ cfg.bg_url }}">{% endif %}
+{% set has_ar = cfg.body_ar|trim %}{% set has_en = cfg.body_en|trim %}
+{% if cfg.title_ar %}<div class="abs t-ar" {% if not has_ar %}style="display:none"{% endif %}>{{ cfg.title_ar }}</div>{% endif %}
+<div class="abs t-en" {% if not has_ar %}style="top:19%;font-size:27pt;font-weight:700;color:{{ cfg.accent }}"{% endif %}>{{ cfg.title_en }}</div>
+
+{% set top = 33.5 %}
+{% if has_ar %}
+ <div class="abs blk ar c" style="top:{{top}}%;direction:rtl">{{ cfg.intro_ar }}</div>
+ {% set top = top + 7 %}
+ <div class="abs nm" style="top:{{top}}%;font-size:21pt;direction:rtl">{{ names_ar or names_en }}</div>
+ {% set top = top + 8 %}
+ <div class="abs blk ar c" style="top:{{top}}%;direction:rtl">{{ cfg.body_ar|fill(ctx) }}</div>
+ {% set top = top + 12 %}
+{% endif %}
+{% if has_en %}
+ {% if not has_ar %}<div class="abs blk en c" style="top:{{top}}%;direction:ltr;font-size:15pt">{{ cfg.intro_en }}</div>{% set top = top + 8 %}
+ {% else %}{% endif %}
+ {% if not has_ar or (names_en and names_en != names_ar) %}
+ <div class="abs nm" style="top:{{top}}%;font-size:{{ 22 if not has_ar else 16 }}pt;direction:ltr;font-family:Plex">{{ names_en or names_ar }}</div>
+ {% set top = top + (8.5 if not has_ar else 6) %}
+ {% endif %}
+ <div class="abs blk en c" style="top:{{top}}%;direction:ltr;{% if not has_ar %}font-size:15pt{% endif %}">{{ cfg.body_en|fill(ctx) }}</div>
+{% endif %}
+{% include "_bottom.html" %}
+{% endblock %}

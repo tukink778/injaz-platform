@@ -1,0 +1,3 @@
+{% extends "base_public.html" %}{% block title %}التحقق من شهادة{% endblock %}
+{% block content %}<div class="card"><h1>التحقق من صحة شهادة</h1><p class="muted">أدخل رمز التحقق المطبوع بجوار رمز QR في الشهادة. · Verify a certificate</p>
+<form method="post">{{ m.csrf() }}<div class="fld"><input name="code" class="ltr" placeholder="K7QM-4TXD-9HPA" maxlength="20" required autofocus style="font-size:1.3rem;text-align:center;letter-spacing:2px"></div><button class="btn pri" style="width:100%;justify-content:center">تحقق</button></form></div>{% endblock %}

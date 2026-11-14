@@ -1,0 +1,16 @@
+{% import "_m.html" as m %}<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="color-scheme" content="light dark"><title>{% block title %}{% endblock %} · INJAZ إنجاز</title><link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='img/favicon.svg') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}"><script src="{{ url_for('static', filename='js/boot.js') }}"></script></head><body><div class="pub">
+<aside class="hero"><a class="brand" href="/" style="color:#fff">{{ m.logo(48) }}<div><b>INJAZ</b><span>إنجاز · منصة الشهادات الإلكترونية</span></div></a>
+<div><h2>شهادات موثّقة،<br>بضغطة واحدة.</h2><p>إصدار الشهادات وإرسالها والتحقق منها بأمان وخصوصية كاملة.</p>
+<ul><li>{{ m.ico('shield') }} بيانات مشفّرة على الخادم</li><li>{{ m.ico('qr') }} تحقق فوري عبر رمز QR</li><li>{{ m.ico('check') }} أرشيف دائم وسجل تدقيق</li></ul></div>
+<small style="opacity:.6">© INJAZ</small></aside>
+<div class="pane"><div class="box">
+<div class="brand-m" style="display:none"></div>
+{% block content %}{% endblock %}
+<div class="lock-note">{{ m.ico('shield') }} <span>بياناتك مشفّرة ومحمية · Your data is encrypted</span></div>
+{{ m.devcredit() }}
+</div></div></div>
+<div id="toasts" aria-live="polite">{% with msgs = get_flashed_messages(with_categories=true) %}{% for c, t in msgs %}<div class="toast {{ c }}" role="{{ 'alert' if c=='err' else 'status' }}"><span>{{ t }}</span><button type="button" aria-label="إغلاق" data-x>×</button></div>{% endfor %}{% endwith %}</div>
+<dialog id="dlg-confirm"><div class="dh"><h2 style="margin:0">تأكيد</h2></div><div class="db" id="dc-m"></div><div class="df"><button class="btn" type="button" data-no>إلغاء</button><button class="btn pri" type="button" data-yes>تأكيد</button></div></dialog>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script></body></html>

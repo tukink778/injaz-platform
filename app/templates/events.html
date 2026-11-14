@@ -1,0 +1,13 @@
+{% extends "base.html" %}{% block title %}الفعاليات{% endblock %}
+{% block content %}<div class="top"><div><h1>الفعاليات</h1><p class="muted">ورش، دورات، محاضرات، مبادرات، مؤتمرات…</p></div>
+{% if g.user.role!='viewer' %}<a class="btn or" href="{{ url_for('main.event_new') }}">{{ m.ico('plus') }} فعالية جديدة</a>{% endif %}</div>
+<form class="card noprint" method="get" style="margin-bottom:16px"><div class="form-grid">
+<div class="fld"><label>بحث</label><input name="q" value="{{ q }}"></div>
+<div class="fld"><label>الحالة</label><select name="status" data-autosubmit><option value="">الكل</option>{% for k,v in STATUS_AR.items() %}<option value="{{k}}" {{'selected' if st==k}}>{{v}}</option>{% endfor %}</select></div>
+<div class="fld"><label>السنة</label><input name="year" value="{{ yr }}" maxlength="4" placeholder="2026"></div>
+{% if g.user.role=='admin' %}<div class="fld"><label>القسم</label><select name="dept" data-autosubmit><option value="">الكل</option>{% for d in depts %}<option value="{{d.id}}" {{'selected' if dept==d.id|string}}>{{ d.name_ar }}</option>{% endfor %}</select></div>{% endif %}
+</div><button class="btn pri">{{ m.ico('search') }} بحث</button></form>
+<div class="tbl-wrap"><table><tr><th>الفعالية</th><th>القسم</th><th>النوع</th><th>التاريخ</th><th>ساعات</th><th>مشاركون</th><th>شهادات</th><th>الحالة</th></tr>
+{% for e in rows %}<tr><td><a href="{{ url_for('main.event_view', eid=e.id) }}"><b>{{ e.title_ar }}</b></a></td><td>{{ e.dept_ar }}</td><td class="small">{{ CATEGORIES[e.category] }}</td><td class="nowrap">{{ e.event_date }}</td><td>{{ '%g'|format(e.hours) }}</td><td>{{ e.n_part }}</td><td>{{ e.n_cert }}</td>
+<td><span class="badge {{ 'ok' if e.status=='issued' else 'or' if e.status=='open' }}">{{ STATUS_AR[e.status] }}</span></td></tr>
+{% else %}<tr><td colspan="8" class="empty">لا توجد نتائج</td></tr>{% endfor %}</table></div>{% endblock %}

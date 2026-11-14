@@ -1,0 +1,7 @@
+{% extends "base.html" %}{% block title %}رفع Excel{% endblock %}
+{% block content %}<div class="top"><div><h1>رفع قائمة المشاركين</h1><p class="muted">{{ ev.title_ar }}</p></div><a class="btn" href="{{ url_for('main.event_view', eid=ev.id) }}">رجوع</a></div>
+<div class="card"><form method="post" enctype="multipart/form-data">{{ m.csrf() }}
+<div class="drop"><div style="font-size:2.4rem">📄</div><h2>اسحب ملف Excel هنا أو اختره</h2><p class="muted">xlsx فقط · حتى 5 ميجابايت · 5000 صف</p>
+<input type="file" name="file" accept=".xlsx" data-drop required style="max-width:340px;margin:auto"><p data-filename class="small"></p></div>
+<div class="btns" style="margin-top:14px"><button class="btn pri">{{ m.ico('check') }} فحص الملف ومعاينته</button><a class="btn" href="{{ url_for('main.template_xlsx') }}">{{ m.ico('dl') }} تحميل القالب الموحد</a></div>
+<p class="hint">لن تُحفظ البيانات قبل أن تراجع المعاينة وتؤكد. يُفحص: صحة الاسم والبريد، والتكرار داخل الملف ومع المسجلين سابقاً.</p></form></div>{% endblock %}

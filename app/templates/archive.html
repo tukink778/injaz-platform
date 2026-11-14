@@ -1,0 +1,9 @@
+{% extends "base.html" %}{% block title %}الأرشيف{% endblock %}
+{% block content %}<div class="top"><div><h1>الأرشيف</h1><p class="muted">كل الشهادات الصادرة سابقاً — ابحث وارجع لأي شهادة.</p></div></div>
+{% call m.filters(f, depts, years, specs, cats) %}{% if g.user.role in ('admin','manager') %}<a class="btn" href="{{ url_for('reports.export_archive', **request.args) }}">{{ m.ico('xls') }} تصدير Excel</a>{% endif %}{% endcall %}
+<div class="tbl-wrap"><table><tr><th>رقم الشهادة</th><th>الاسم</th><th>الفعالية</th><th>التاريخ</th><th>القسم</th><th>التخصص</th><th>بيانات الطالب</th><th>الحالة</th><th></th></tr>
+{% for r in rows %}<tr><td class="mono small">{{ r.serial }}</td><td><b>{{ r.name }}</b>{% if r.uid_idx or r.email_idx %}<br><a class="small ltr" href="{{ url_for('reports.person', uid_idx=(r.uid_idx or r.email_idx)) }}">{{ r.uid or 'سجل الشخص' }}</a>{% endif %}</td>
+<td><a href="{{ url_for('main.event_view', eid=r.event_id) }}">{{ r.title_ar }}</a></td><td class="nowrap">{{ r.event_date }}</td><td class="small">{{ r.dept_ar }}</td><td class="small">{{ r.specialization or '—' }}</td><td class="small">{% if r.acad or r.gender or r.nat %}{{ m.demo_badges(r.acad, r.gender, r.nat) }}{% else %}—{% endif %}</td>
+<td><span class="badge {{ 'ok' if r.status=='valid' else 'err' }}">{{ 'سارية' if r.status=='valid' else 'ملغاة' }}</span></td><td><a class="btn sm" target="_blank" href="{{ url_for('main.cert_pdf', cid=r.id) }}">عرض PDF</a></td></tr>
+{% else %}<tr><td colspan="9" class="empty">لا توجد نتائج</td></tr>{% endfor %}</table></div>
+{% if rows|length>=500 %}<p class="hint">يعرض أول 500 نتيجة — ضيّق البحث.</p>{% endif %}{% endblock %}

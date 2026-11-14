@@ -1,0 +1,12 @@
+# لا تُرفع البيانات ولا الأسرار أبداً
+data/*
+!data/.gitkeep
+.env
+*.db
+*.db-wal
+*.db-shm
+.keys
+__pycache__/
+*.pyc
+.venv/
+backups/

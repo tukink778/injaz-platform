@@ -1,0 +1,10 @@
+{% extends "_base.html" %}
+{% block css %}.el{position:absolute;overflow:hidden}.el img{width:100%;height:100%;object-fit:contain;display:block}.el .hl,.el .bd{color:inherit;font-weight:700}
+.qrw{font-family:Inter,Plex,monospace;direction:ltr;font-size:7.5pt;font-weight:600;color:#333;letter-spacing:.3px;text-align:center}{% endblock %}
+{% block body %}
+{% if cfg.bg_url %}<img class="bg" src="{{ cfg.bg_url }}">{% endif %}
+{% for e in cfg.els %}{% if e.kind=='text' %}<div class="el" style="{{ e.style }}">{{ e.html }}</div>
+{% elif e.kind=='img' %}<div class="el" style="{{ e.style }}"><img src="{{ e.src }}"></div>
+{% elif e.kind=='qr' %}<div class="el" style="{{ e.style }}"><img src="{{ e.src }}" style="width:auto;max-width:100%;flex:1;min-height:0;aspect-ratio:1">{% if e.caption %}<div class="qrw">{{ e.serial }}</div>{% endif %}</div>
+{% else %}<div class="el" style="{{ e.style }}"></div>{% endif %}{% endfor %}
+{% endblock %}

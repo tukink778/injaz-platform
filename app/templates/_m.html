@@ -1,0 +1,44 @@
+{% macro logo(size=40) %}<svg viewBox="0 0 64 64" width="{{size}}" height="{{size}}" aria-hidden="true"><defs><linearGradient id="lg{{size}}" x1="8" y1="4" x2="56" y2="60" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#2F6BFF"/><stop offset=".55" stop-color="#5B4DFF"/><stop offset="1" stop-color="#8B4DFF"/></linearGradient></defs><path d="M32 3.5 54.5 16.5v31L32 60.5 9.5 47.5v-31z" fill="url(#lg{{size}})"/><path d="M32 3.5 54.5 16.5v31L32 60.5" fill="none" stroke="#fff" stroke-opacity=".18" stroke-width="1.5"/><path d="M19.5 34.5 28 43l17-19.5" fill="none" stroke="#fff" stroke-width="5.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M37.5 22h9v9" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" stroke-opacity=".9"/><circle cx="20" cy="21" r="2.4" fill="#fff" fill-opacity=".75"/><circle cx="27.5" cy="17" r="1.6" fill="#fff" fill-opacity=".45"/><circle cx="20" cy="28" r="1.3" fill="#fff" fill-opacity=".45"/></svg>{% endmacro %}
+{% macro empty(icon, title, text='') %}<div class="empty"><div class="ei">{{ ico(icon) }}</div><b>{{ title }}</b>{% if text %}<div class="small">{{ text }}</div>{% endif %}{{ caller() if caller }}</div>{% endmacro %}
+{% macro demo_fields(v={}, req=True) %}{% for key in ('acad','gender','nat') %}{% set F = choice_fields[key] %}
+<div class="fld"><label>{{ F.ar }} / {{ F.en }} {{ '*' if req }}</label><select name="{{ key }}" {{ 'required' if req }}><option value="">— اختر / Select —</option>{% for c,ar,en in choice_options(key) %}<option value="{{ c }}" {{ 'selected' if v.get(key)==c }}>{{ ar }} · {{ en }}</option>{% endfor %}</select></div>{% endfor %}{% endmacro %}
+{% macro demo_badges(acad, gender, nat) %}{% for key,val in (('acad',acad),('gender',gender),('nat',nat)) %}{% if val %}<span class="badge">{{ choice_label(key, val) }}</span> {% endif %}{% endfor %}{% endmacro %}
+{% macro devcredit() %}{% set du = cfg.DEVELOPER_URL %}<footer class="devfoot" dir="ltr"><span>Developed &amp; Programmed by:</span> {% if du and du[:8] in ('https://', ) or du[:7]=='http://' %}<a href="{{ du }}" target="_blank" rel="noopener noreferrer"><b>TURKI ALALAWI</b></a>{% else %}<b>TURKI ALALAWI</b>{% endif %}</footer>{% endmacro %}
+{% macro csrf() %}<input type="hidden" name="_csrf" value="{{ csrf_token() }}">{% endmacro %}
+{% macro ico(n) %}{% set P = {
+ 'home':'M3 11l9-8 9 8v9a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1z',
+ 'cal':'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4',
+ 'arch':'M3 5h18v4H3zM5 9v10h14V9M10 13h4',
+ 'chart':'M4 20V10M10 20V4M16 20v-7M22 20H2',
+ 'users':'M16 19v-1a4 4 0 00-4-4H7a4 4 0 00-4 4v1M9.5 10a3.5 3.5 0 100-7 3.5 3.5 0 000 7zM21 19v-1a4 4 0 00-3-3.9M16 3.1a3.5 3.5 0 010 6.8',
+ 'tpl':'M4 4h16v16H4zM4 9h16M9 9v11',
+ 'gear':'M12 15a3 3 0 100-6 3 3 0 000 6zM19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z',
+ 'shield':'M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z M9 12l2 2 4-4',
+ 'bell':'M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 01-3.4 0',
+ 'spark':'M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z',
+ 'bolt':'M13 2L4 14h7l-1 8 9-12h-7z','copy':'M9 9h11v11H9zM5 15V5h10','edit':'M4 20h4L19 9l-4-4L4 16zM13 7l4 4',
+ 'trash':'M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3','eye':'M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12zM12 15a3 3 0 100-6 3 3 0 000 6z',
+ 'layers':'M12 3l9 5-9 5-9-5zM3 13l9 5 9-5M3 17.5l9 5 9-5','help':'M12 21a9 9 0 100-18 9 9 0 000 18zM9.5 9.5a2.5 2.5 0 115 .5c0 1.5-2.5 2-2.5 3.5M12 17h.01',
+ 'x':'M6 6l12 12M18 6L6 18','arrow':'M5 12h14M13 6l6 6-6 6','back':'M19 12H5M11 6l-6 6 6 6','img':'M3 5h18v14H3zM3 16l5-5 4 4 3-3 6 6M8.5 9.5h.01',
+ 'type':'M5 6V4h14v2M12 4v16M9 20h6','lock':'M5 11h14v10H5zM8 11V7a4 4 0 118 0v4','user':'M12 12a4 4 0 100-8 4 4 0 000 8zM4 21v-1a6 6 0 016-6h4a6 6 0 016 6v1',
+ 'side':'M3 4h18v16H3zM9 4v16','pie':'M12 3v9h9A9 9 0 0012 3zM11 5a8 8 0 108 8h-8z','warn':'M12 3l10 18H2zM12 10v5M12 18h.01','info':'M12 21a9 9 0 100-18 9 9 0 000 18zM12 11v6M12 7.5h.01',
+ 'move':'M5 9l-3 3 3 3M9 5l3-3 3 3M15 19l-3 3-3-3M19 9l3 3-3 3M2 12h20M12 2v20','dup':'M8 8h12v12H8zM4 16V4h12','refresh':'M20 11a8 8 0 00-14-4L4 9M4 4v5h5M4 13a8 8 0 0014 4l2-2M20 20v-5h-5',
+ 'power':'M12 3v9M6.4 6.4a8 8 0 1011.2 0','file':'M6 3h8l4 4v14H6zM14 3v5h5','clock':'M12 21a9 9 0 100-18 9 9 0 000 18zM12 7v5l3 2','send':'M22 2L11 13M22 2l-7 20-4-9-9-4z',
+ 'plus':'M12 5v14M5 12h14','out':'M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9',
+ 'moon':'M21 13a9 9 0 11-10-10 7 7 0 0010 10z','menu':'M3 6h18M3 12h18M3 18h18','check':'M5 13l4 4L19 7',
+ 'qr':'M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h3v3h-3zM20 14v3M14 20h3M20 20h1','xls':'M5 3h9l5 5v13H5zM9 12l6 6M15 12l-6 6',
+ 'mail':'M3 5h18v14H3zM3 7l9 7 9-7','search':'M11 18a7 7 0 100-14 7 7 0 000 14zM21 21l-5-5','dl':'M12 3v12M7 10l5 5 5-5M4 21h16','key':'M15 7a4 4 0 11-3.5 6L3 21v-3l2-2v-2h2v-2h2l2.4-2.4A4 4 0 0115 7z'
+} %}<svg class="ico" viewBox="0 0 24 24"><path d="{{ P[n] }}"/></svg>{% endmacro %}
+{% macro bars(items, cls='') %}{% set mx = (items|map(attribute=1)|max) if items else 1 %}
+{% for k,v in items %}<div class="bar {{cls}}"><span class="t1">{{ k }}</span><div class="t"><i style="width:{{ (100*v/mx)|round(1) }}%"></i></div><b>{{ v }}</b></div>{% else %}<div class="empty">لا توجد بيانات</div>{% endfor %}{% endmacro %}
+{% macro filters(f, depts, years, specs, cats, show_status=True) %}
+<form method="get" class="card noprint" style="margin-bottom:16px"><div class="form-grid">
+ <div class="fld"><label>بحث</label><input name="q" value="{{ f.q }}" placeholder="اسم، رقم جامعي، بريد، رقم شهادة…"></div>
+ {% if depts|length > 1 %}<div class="fld"><label>القسم/المركز</label><select name="dept"><option value="">الكل</option>{% for d in depts %}<option value="{{d.id}}" {{'selected' if f.dept==d.id|string}}>{{ d.name_ar }}</option>{% endfor %}</select></div>{% endif %}
+ <div class="fld"><label>السنة</label><select name="year"><option value="">الكل</option>{% for y in years %}<option {{'selected' if f.year==y}}>{{y}}</option>{% endfor %}</select></div>
+ <div class="fld"><label>نوع النشاط</label><select name="cat"><option value="">الكل</option>{% for k,v in cats.items() %}<option value="{{k}}" {{'selected' if f.cat==k}}>{{v}}</option>{% endfor %}</select></div>
+ <div class="fld"><label>التخصص</label><select name="spec"><option value="">الكل</option>{% for s in specs %}<option {{'selected' if f.spec==s}}>{{s}}</option>{% endfor %}</select></div>
+ {% for key in ('acad','gender','nat') %}<div class="fld"><label>{{ choice_fields[key].ar }}</label><select name="{{ key }}"><option value="">الكل</option>{% for c,ar,en in choice_options(key) %}<option value="{{ c }}" {{ 'selected' if f.get(key)==c }}>{{ ar }}</option>{% endfor %}</select></div>{% endfor %}
+ {% if show_status %}<div class="fld"><label>حالة الشهادة</label><select name="status"><option value="">الكل</option><option value="valid" {{'selected' if f.status=='valid'}}>سارية</option><option value="revoked" {{'selected' if f.status=='revoked'}}>ملغاة</option></select></div>{% endif %}
+ <div class="fld"><label>من تاريخ</label><input type="date" name="dfrom" value="{{ f.dfrom }}"></div><div class="fld"><label>إلى تاريخ</label><input type="date" name="dto" value="{{ f.dto }}"></div>
+</div><div class="btns"><button class="btn pri">{{ ico('search') }} تطبيق</button><a class="btn" href="?">إعادة ضبط</a>{{ caller() if caller }}</div></form>{% endmacro %}

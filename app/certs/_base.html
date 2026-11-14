@@ -1,0 +1,38 @@
+<!doctype html><html lang="ar"><head><meta charset="utf-8"><title>{{ serial }} — {{ cfg.title_en or cfg.title_ar }}</title>
+<style>
+{% for w in (400,500,600,700) %}
+@font-face{font-family:Plex;font-weight:{{w}};src:url("file://{{ fonts }}/ibm-plex-sans-arabic-arabic-{{w}}-normal.woff2") format("woff2");unicode-range:U+0600-06FF,U+0750-077F,U+FB50-FDFF,U+FE70-FEFF,U+200C-200F,U+0660-0669;}
+@font-face{font-family:Plex;font-weight:{{w}};src:url("file://{{ fonts }}/ibm-plex-sans-arabic-latin-{{w}}-normal.woff2") format("woff2");unicode-range:U+0000-00FF,U+2000-206F;}
+{% endfor %}
+@font-face{font-family:AmiriC;font-weight:400;src:url("file://{{ fonts }}/amiri-arabic-400-normal.woff2");unicode-range:U+0600-06FF,U+FB50-FDFF,U+FE70-FEFF;}
+@font-face{font-family:AmiriC;font-weight:700;src:url("file://{{ fonts }}/amiri-arabic-700-normal.woff2");unicode-range:U+0600-06FF,U+FB50-FDFF,U+FE70-FEFF;}
+@font-face{font-family:AmiriC;font-weight:400;src:url("file://{{ fonts }}/amiri-latin-400-normal.woff2");unicode-range:U+0000-00FF,U+2000-206F;}
+@font-face{font-family:AmiriC;font-weight:700;src:url("file://{{ fonts }}/amiri-latin-700-normal.woff2");unicode-range:U+0000-00FF,U+2000-206F;}
+@font-face{font-family:Inter;font-weight:400;src:url("file://{{ fonts }}/inter-latin-400-normal.woff2");}
+@font-face{font-family:Inter;font-weight:600;src:url("file://{{ fonts }}/inter-latin-600-normal.woff2");}
+@font-face{font-family:Inter;font-weight:700;src:url("file://{{ fonts }}/inter-latin-700-normal.woff2");}
+@page{size:{{ pw }}mm {{ ph }}mm;margin:0}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:{{ pw }}mm;height:{{ ph }}mm}
+body{font-family:Plex,sans-serif;color:#111;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.page{position:relative;width:{{ pw }}mm;height:{{ ph }}mm;overflow:hidden;background:{{ cfg.bg_color or "#fff" }}}
+.bg{position:absolute;inset:0;width:100%;height:100%}
+.abs{position:absolute}
+.ar{direction:rtl;text-align:right}.en{direction:ltr;text-align:left}
+.c{text-align:center}
+.v-name{font-weight:700}
+.hl{color:{{ cfg.accent }};font-weight:700}.bd{font-weight:700}
+.p{color:{{ cfg.primary }}}.a{color:{{ cfg.accent }}}
+.qrbox{position:absolute;display:flex;align-items:center;gap:3mm}
+.qrbox img{width:23mm;height:23mm;display:block}
+.qrbox .t{font-size:7.5pt;line-height:1.5;color:#333}
+.qrbox .s{font-family:Inter,Plex,monospace;direction:ltr;font-weight:600;color:{{ cfg.primary }};font-size:8.5pt;letter-spacing:.3px}
+.sign{position:absolute;display:flex;align-items:center;gap:3mm}
+.sign .stamp{width:27mm;height:auto;display:block}
+.sign .sig{width:34mm;height:auto;display:block;margin:0 0 -9mm 4mm;position:relative;z-index:0}
+.sign .who{font-size:8.5pt;line-height:1.5;font-weight:500;color:#222;position:relative;z-index:1}
+.sign .who b{color:{{ cfg.primary }};font-weight:700;display:block;font-size:9.5pt}
+{% block css %}{% endblock %}
+</style></head><body><div class="page">
+{% block body %}{% endblock %}
+</div></body></html>

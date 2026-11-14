@@ -1,0 +1,30 @@
+{% extends "_base.html" %}
+{% block css %}
+.page{background:#fff}
+.f1{position:absolute;inset:7mm;border:1.4mm solid {{ cfg.primary }}}
+.f2{position:absolute;inset:11.5mm;border:.4mm solid {{ cfg.accent }}}
+.corner{position:absolute;width:16mm;height:16mm;border:0 solid {{ cfg.accent }}}
+.tl{top:15mm;left:15mm;border-top-width:1.2mm;border-left-width:1.2mm}.tr{top:15mm;right:15mm;border-top-width:1.2mm;border-right-width:1.2mm}
+.bl{bottom:15mm;left:15mm;border-bottom-width:1.2mm;border-left-width:1.2mm}.br{bottom:15mm;right:15mm;border-bottom-width:1.2mm;border-right-width:1.2mm}
+.logos{position:absolute;top:17mm;left:0;width:100%;display:flex;justify-content:center;align-items:center}
+.logos img{height:20mm}
+.t-ar{top:41mm;left:0;width:100%;text-align:center;font-family:AmiriC,serif;font-size:35pt;font-weight:700;color:{{ cfg.primary }};line-height:1.2}
+.t-en{top:55mm;left:0;width:100%;text-align:center;font-family:Inter,Plex;font-size:13pt;letter-spacing:4px;text-transform:uppercase;color:{{ cfg.accent }};font-weight:600}
+.orn{position:absolute;top:65mm;left:50%;width:60mm;margin-left:-30mm;height:.5mm;background:linear-gradient(90deg,transparent,{{ cfg.accent }},transparent)}
+.blk{left:25mm;width:247mm;text-align:center;font-size:13.5pt;line-height:1.9;color:#333}
+.nm-ar{left:0;width:100%;text-align:center;font-family:AmiriC,serif;font-size:30pt;font-weight:700;color:#111}
+.nm-en{left:0;width:100%;text-align:center;font-size:17pt;font-weight:600;color:{{ cfg.primary }};letter-spacing:.5px}
+{% endblock %}
+{% block body %}
+<div class="f1"></div><div class="f2"></div><div class="corner tl"></div><div class="corner tr"></div><div class="corner bl"></div><div class="corner br"></div>
+<div class="logos"><img src="{{ logo_univ_url }}"></div>
+<div class="abs t-ar">{{ cfg.title_ar }}</div>
+<div class="abs t-en">{{ cfg.title_en }}</div><div class="orn"></div>
+<div class="abs blk ar" style="top:71mm;direction:rtl">{{ cfg.intro_ar }}</div>
+<div class="abs nm-ar" style="top:81mm">{{ names_ar or names_en }}</div>
+{% if names_en and names_en != names_ar %}<div class="abs nm-en" style="top:97mm;direction:ltr">{{ names_en }}</div>{% endif %}
+<div class="abs blk ar" style="top:108mm;direction:rtl">{{ cfg.body_ar|fill(ctx) }}</div>
+{% if cfg.body_en %}<div class="abs blk en c" style="top:124mm;font-size:11pt;color:#555;direction:ltr">{{ cfg.body_en|fill(ctx) }}</div>{% endif %}
+{% set bottom_top = 76 %}
+{% include "_bottom.html" %}
+{% endblock %}

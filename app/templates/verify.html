@@ -1,0 +1,8 @@
+{% extends "base_public.html" %}{% block title %}نتيجة التحقق{% endblock %}
+{% block content %}<div class="card" style="text-align:center">
+{% if not x %}<div class="seal err">✕</div><h1>شهادة غير موجودة</h1><p class="muted">لا توجد شهادة بهذا الرمز <span class="mono">{{ code }}</span>. تأكد من الرمز أو اعتبر الوثيقة غير موثوقة.</p>
+{% elif x.status=='revoked' %}<div class="seal err">✕</div><h1>شهادة ملغاة</h1><p class="muted">هذه الشهادة صدرت سابقاً لكنها <b>لم تعد سارية</b>.</p>
+{% else %}<div class="seal ok">✓</div><h1>شهادة صحيحة وسارية</h1><p class="muted">صادرة عن النظام الرسمي لمنصة إنجاز.</p>{% endif %}
+{% if x %}<dl class="kv" style="text-align:start">{% if name %}<dt>الاسم</dt><dd>{{ name }}</dd>{% endif %}<dt>الفعالية</dt><dd>{{ x.title_ar }}</dd><dt>التاريخ</dt><dd>{{ x.event_date }}{% if x.end_date %} → {{ x.end_date }}{% endif %}</dd>
+<dt>الساعات</dt><dd>{{ '%g'|format(x.hours) }}</dd><dt>الجهة</dt><dd>{{ x.dept_ar }}</dd><dt>رقم الشهادة</dt><dd class="mono">{{ x.serial }}</dd><dt>تاريخ الإصدار</dt><dd>{{ ts_fmt(x.issued_at, '%Y-%m-%d') }}</dd></dl>{% endif %}
+<a class="btn" href="{{ url_for('public.verify_form') }}">تحقق من شهادة أخرى</a></div>{% endblock %}

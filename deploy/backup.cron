@@ -1,0 +1,2 @@
+# نسخة احتياطية يومية 03:00 (crontab -e كمستخدم injaz). انسخ مجلد backups خارج الخادم دورياً.
+0 3 * * * cd /opt/injaz && /opt/injaz/.venv/bin/python manage.py backup >> /var/log/injaz-backup.log 2>&1

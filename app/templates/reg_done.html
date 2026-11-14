@@ -1,0 +1,4 @@
+{% extends "base_public.html" %}{% block title %}تم التسجيل{% endblock %}
+{% block content %}<div class="card" style="text-align:center"><div class="seal ok">✓</div>
+<h1>{{ 'أنت مسجّل مسبقاً' if dup else 'تم تسجيل حضورك' }}</h1><p class="muted">{{ ev.title_ar }}</p>
+<p>{{ 'سجلك موجود لدينا، لا حاجة لتسجيل آخر.' if dup else 'سيصلك الشهادة على بريدك الإلكتروني بعد اعتماد المنظم.' }}<br><span class="ltr muted">{{ 'You are already registered.' if dup else 'Your certificate will be emailed after approval.' }}</span></p></div>{% endblock %}

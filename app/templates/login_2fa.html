@@ -1,0 +1,4 @@
+{% extends "base_public.html" %}{% block title %}التحقق بخطوتين{% endblock %}
+{% block content %}<div class="card"><h1>التحقق بخطوتين</h1><p class="muted">أدخل الرمز المكوّن من 6 أرقام من تطبيق المصادقة.</p>
+<form method="post">{{ m.csrf() }}<div class="fld"><input name="code" inputmode="numeric" pattern="[0-9 ]*" maxlength="7" autofocus required class="ltr" style="font-size:1.6rem;text-align:center;letter-spacing:8px"></div>
+<button class="btn pri" style="width:100%;justify-content:center">تأكيد</button></form></div>{% endblock %}

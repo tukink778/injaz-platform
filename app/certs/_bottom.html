@@ -1,0 +1,19 @@
+{% if cfg.show_stamp or cfg.show_signature %}
+<div class="sign" style="left:6%;top:{{ bottom_top|default(74.5) }}%">
+ {% if cfg.show_stamp %}<img class="stamp" src="{{ stamp_url }}">{% endif %}
+ <div style="position:relative">
+  {% if cfg.show_signature %}<img class="sig" src="{{ sig_url }}">{% endif %}
+  <div class="who en">
+   {% if signatory_name %}<b>{{ signatory_name }}</b>{% endif %}
+   {{ signatory_title_en or dept_en }}<br>{{ org_en }}
+  </div>
+ </div>
+</div>
+{% endif %}
+{% if cfg.show_qr %}
+<div class="qrbox" style="right:6%;top:{{ bottom_top|default(74.5) }}%;direction:rtl">
+ <img src="{{ qr_url }}">
+ <div class="t"><div>للتحقق من صحة الشهادة امسح الرمز</div><div style="direction:ltr;text-align:right;color:#555">Scan to verify authenticity</div>
+ <div class="s">{{ serial }}</div></div>
+</div>
+{% endif %}

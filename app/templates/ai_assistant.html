@@ -1,0 +1,9 @@
+{% extends "base.html" %}{% block title %}مساعد إنجاز{% endblock %}
+{% block content %}<div class="top"><div><h1>{{ m.ico('spark') }} مساعد إنجاز</h1><p class="muted">اكتب ما تريده بلغتك. يجيبك ويفتح لك الصفحة المناسبة. لا يعرض أي بيانات شخصية، ويعمل محلياً دون إرسال شيء لخدمات خارجية.</p></div></div>
+<div class="card"><form method="post" class="ai-ask" action="{{ url_for('ai.assistant') }}">{{ m.csrf() }}
+<input name="q" value="{{ q }}" maxlength="200" required autofocus placeholder="مثال: كم شهادة صدرت؟ ما المهام المعلّقة؟ كيف أرفع ملف Excel؟" aria-label="اسأل المساعد"><button class="btn pri">{{ m.ico('arrow') }} اسأل</button></form>
+<div class="chips" style="margin-top:12px">{% for s in ['ما المهام المعلّقة؟','كم شهادة صدرت؟','كيف أنشئ فعالية جديدة؟','كيف أرفع ملف Excel؟','كم ساعة تدريبية؟','ملخص وتحليل'] %}<form method="post" style="display:inline">{{ m.csrf() }}<input type="hidden" name="q" value="{{ s }}"><button class="chip" type="submit">{{ s }}</button></form>{% endfor %}</div></div>
+{% if ans %}<div class="card ai-ans" aria-live="polite"><div class="small muted">سؤالك: {{ q }}</div><p style="font-size:1.05rem;margin:8px 0">{{ ans.text }}</p>
+{% if ans.bullets %}<ul>{% for b in ans.bullets %}<li>{{ b }}</li>{% endfor %}</ul>{% endif %}
+{% if ans.links %}<div class="btns">{% for l in ans.links %}<a class="btn sm" href="{{ l.u }}">{{ l.t }} {{ m.ico('back') }}</a>{% endfor %}</div>{% endif %}</div>{% endif %}
+{% endblock %}

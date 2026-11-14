@@ -1,0 +1,4 @@
+{% extends "base_public.html" %}{% block title %}شهاداتي{% endblock %}
+{% block content %}<div class="card"><h1>احصل على شهاداتك</h1><p class="muted">أدخل رقمك الجامعي أو بريدك الإلكتروني. سنرسل رابطاً آمناً صالحاً لساعة إلى البريد المسجل لدينا.</p>
+{% if sent %}<div class="flash ok">إذا كانت بياناتك مسجلة فسيصلك الرابط على البريد خلال دقائق. · If you are registered, a link is on its way.</div>{% endif %}
+<form method="post">{{ m.csrf() }}<div class="fld"><input name="q" class="ltr" required maxlength="120" placeholder="22S1234 أو name@mail.com"></div><button class="btn pri" style="width:100%;justify-content:center">{{ m.ico('mail') }} أرسل الرابط</button></form></div>{% endblock %}

@@ -1,0 +1,7 @@
+{% extends "base.html" %}{% block title %}الأقسام{% endblock %}
+{% block content %}<div class="top"><div><h1>الأقسام والمراكز</h1><p class="muted">كل جهة تستخدم المنصة تُضاف هنا (يتعمم النظام على الجميع). رمز الجهة يدخل في رقم الشهادة.</p></div></div>
+<div class="card"><h2>إضافة جهة</h2><form method="post">{{ m.csrf() }}<input type="hidden" name="act" value="create"><div class="form-grid"><div class="fld"><label>الرمز (إنجليزي)</label><input name="code" required maxlength="8" class="ltr" placeholder="IT"></div>
+<div class="fld"><label>الاسم بالعربية</label><input name="name_ar" required></div><div class="fld"><label>الاسم بالإنجليزية</label><input name="name_en" class="ltr"></div></div><button class="btn pri">إضافة</button></form></div>
+<div class="card"><div class="tbl-wrap"><table><tr><th>الرمز</th><th>الاسم</th><th>فعاليات</th><th></th></tr>{% for d in rows %}<tr><td class="mono">{{ d.code }}</td>
+<td><form method="post" class="btns">{{ m.csrf() }}<input type="hidden" name="act" value="edit"><input type="hidden" name="id" value="{{ d.id }}"><input name="name_ar" value="{{ d.name_ar }}" style="width:220px"><input name="name_en" value="{{ d.name_en }}" class="ltr" style="width:240px"><button class="btn sm">حفظ</button></form></td><td>{{ d.ne }}</td>
+<td><form method="post">{{ m.csrf() }}<input type="hidden" name="act" value="toggle"><input type="hidden" name="id" value="{{ d.id }}"><button class="btn sm {{ 'danger' if d.active }}">{{ 'إيقاف' if d.active else 'تفعيل' }}</button></form></td></tr>{% endfor %}</table></div></div>{% endblock %}

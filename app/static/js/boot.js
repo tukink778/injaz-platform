@@ -1,0 +1,2 @@
+(function(){var r=document.documentElement;try{var t=localStorage.getItem('theme');if(t)r.setAttribute('data-theme',t);var d=localStorage.getItem('dir');if(d){r.setAttribute('dir',d);r.setAttribute('lang',d==='ltr'?'en':'ar')}
+if(localStorage.getItem('collapsed')==='1'&&innerWidth>980){document.addEventListener('DOMContentLoaded',function(){document.body.classList.add('collapsed')})}}catch(e){}})();

@@ -1,0 +1,18 @@
+{% extends "base.html" %}{% block title %}محلل البيانات{% endblock %}
+{% block content %}<div class="top"><div><h1>{{ m.ico('xls') }} محلل بيانات المشاركين</h1><p class="muted">افحص ملف Excel قبل الرفع: تكرار، بيانات ناقصة أو خاطئة، أسماء متشابهة، وتصحيح تلقائي لأخطاء البريد الشائعة. الملف يُعالج داخل الخادم ولا يُحفظ بعد انتهاء الجلسة.</p></div><a class="btn" href="{{ url_for('main.template_xlsx') }}">{{ m.ico('dl') }} قالب Excel</a></div>
+<div class="card"><form method="post" enctype="multipart/form-data">{{ m.csrf() }}<div class="form-grid">
+<div class="fld"><label>ملف Excel (xlsx)</label><input type="file" name="file" accept=".xlsx" required></div>
+<div class="fld"><label>الرقم الجامعي</label><select name="require_uid"><option value="1" {{ 'selected' if req_uid=='1' }}>مطلوب</option><option value="0" {{ 'selected' if req_uid=='0' }}>اختياري</option></select></div>
+<div class="fld"><label>التخصص</label><select name="require_spec"><option value="0" {{ 'selected' if req_spec=='0' }}>اختياري</option><option value="1" {{ 'selected' if req_spec=='1' }}>مطلوب</option></select></div></div>
+<div class="btns"><button class="btn pri" data-busy>{{ m.ico('search') }} تحليل الملف</button></div></form></div>
+{% if A %}<div class="grid g4" style="margin-top:18px"><div class="card kpi"><div class="n">{{ A.total }}</div><div class="l">صفوف محلَّلة</div></div>
+<div class="card kpi ok"><div class="n">{{ A.good }}</div><div class="l">جاهزة ({{ A.ready_pct }}%)</div></div>
+<div class="card kpi {{ 'wn' if A.bad else 'ok' }}"><div class="n">{{ A.bad }}</div><div class="l">تحتاج تصحيحاً</div></div>
+<div class="card kpi"><div class="n">{{ A.warns }}</div><div class="l">تنبيهات</div></div></div>
+<div class="card" style="margin-top:18px"><h2>ملخص التحقق</h2><p>{{ summ }}</p>
+{% if A.good or A.bad %}<div class="btns"><a class="btn pri" href="{{ url_for('ai.data_cleaned', token=token) }}">{{ m.ico('dl') }} تنزيل الملف المنظَّف</a></div><p class="small muted">يحتوي الملف المنظّف الصفوف الجاهزة بعد التصحيح التلقائي وإزالة المكرر، وورقة «تحتاج مراجعة» بالصفوف المرفوضة.</p>{% endif %}</div>
+{% if A.issues %}<div class="card" style="margin-top:18px"><h2>التفاصيل ({{ A.issues|length }})</h2><div class="tbl-wrap"><table><tr><th>الصف</th><th>النوع</th><th>المشكلة</th><th>كيف أعالجها</th></tr>
+{% for i in A.issues[:300] %}<tr><td class="nowrap">{{ i.row }}</td><td><span class="badge {{ {'err':'err','warn':'warn','fix':'ok'}[i.sev] }}">{{ {'err':'خطأ','warn':'تنبيه','fix':'تصحيح'}[i.sev] }}</span></td><td>{{ i.msg }}</td><td class="small muted">{{ i.help }}</td></tr>{% endfor %}</table></div>
+{% if A.issues|length>300 %}<p class="small muted">عُرض أول 300 فقط؛ الملف المنظّف يشملها كلها.</p>{% endif %}</div>
+{% else %}<div class="card" style="margin-top:18px">{% call m.empty('check','لا توجد مشاكل','بياناتك نظيفة وجاهزة للرفع.') %}{% endcall %}</div>{% endif %}{% endif %}
+{% endblock %}

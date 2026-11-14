@@ -1,0 +1,10 @@
+{% extends "base.html" %}{% block title %}QR التسجيل{% endblock %}
+{% block content %}<div class="top noprint"><div><h1>رمز التسجيل (QR)</h1><p class="muted">اعرضه على الشاشة أو اطبعه ليمسحه المشاركون عند الحضور.</p></div>
+<div class="btns"><button class="btn pri" data-print type="button">طباعة الملصق</button><a class="btn" href="{{ url_for('main.event_view', eid=ev.id) }}">رجوع</a></div></div>
+<div class="poster"><div style="color:#e66926;font-weight:700">سجّل حضورك · Register your attendance</div><h1>{{ ev.title_ar }}</h1>{% if ev.title_en %}<div class="ltr" style="text-align:center;color:#555">{{ ev.title_en }}</div>{% endif %}
+<img src="{{ url_for('main.event_qr_png', eid=ev.id) }}" alt="QR"><div class="small ltr" style="text-align:center;word-break:break-all">{{ reg_url }}</div>
+{% if ev.reg_pin %}<div style="margin-top:12px;font-size:1.3rem">رمز الحضور: <b class="mono">{{ ev.reg_pin }}</b></div>{% endif %}
+<p class="small" style="color:#555">{{ ev.dept_ar }}</p></div>
+<div class="card noprint" style="margin-top:18px"><div class="btns"><button class="btn" data-copy="{{ reg_url }}" type="button">نسخ الرابط</button>
+<form method="post" action="{{ url_for('main.reg_rotate', eid=ev.id) }}" data-confirm="سيتوقف الرمز الحالي عن العمل، متأكد؟">{{ m.csrf() }}<button class="btn danger">إبطال الرمز وإنشاء رمز جديد</button></form></div>
+<p class="hint">إذا سُرّب الرابط لمن لم يحضر: أبطل الرمز، أو استخدم رمز الحضور (PIN) من صفحة تعديل الفعالية.</p></div>{% endblock %}

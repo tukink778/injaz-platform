@@ -1,0 +1,18 @@
+# systemd: sudo cp deploy/injaz.service /etc/systemd/system/ && sudo systemctl enable --now injaz
+[Unit]
+Description=INJAZ certificates platform
+After=network.target
+
+[Service]
+User=injaz
+WorkingDirectory=/opt/injaz
+EnvironmentFile=/opt/injaz/.env
+ExecStart=/opt/injaz/.venv/bin/python wsgi.py
+Restart=on-failure
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ReadWritePaths=/opt/injaz/data
+
+[Install]
+WantedBy=multi-user.target
