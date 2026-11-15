@@ -156,8 +156,7 @@ def template_new():
         i = int(request.form.get("preset", 0) or 0)
         name, cfg = certs.PRESETS[i % len(certs.PRESETS)]
         cfg = certs.clean_cfg(cfg); name += " (نسخة)"
-    db().execute("INSERT INTO templates(name,config,created_at) VALUES(?,?,?)", (name, json.dumps(cfg, ensure_ascii=False), int(time.time())))
-    tid = db().execute("SELECT last_insert_rowid()").fetchone()[0]; audit("template.create", str(tid))
+    tid = db().insert("INSERT INTO templates(name,config,created_at) VALUES(?,?,?)", (name, json.dumps(cfg, ensure_ascii=False), int(time.time()))); audit("template.create", str(tid))
     flash("أُنشئ القالب. عدّله ثم فعّله ليظهر عند إنشاء الفعاليات", "ok")
     return redirect(url_for("admin.template_edit", tid=tid))
 
@@ -166,8 +165,7 @@ def template_new():
 @roles("admin")
 def template_duplicate(tid):
     t = _tpl_or_404(tid)
-    db().execute("INSERT INTO templates(name,config,builtin,active,created_at) VALUES(?,?,0,1,?)", (t["name"] + " (نسخة)", t["config"], int(time.time())))
-    nid = db().execute("SELECT last_insert_rowid()").fetchone()[0]; audit("template.duplicate", str(tid), f"->{nid}")
+    nid = db().insert("INSERT INTO templates(name,config,builtin,active,created_at) VALUES(?,?,0,1,?)", (t["name"] + " (نسخة)", t["config"], int(time.time()))); audit("template.duplicate", str(tid), f"->{nid}")
     flash("تم نسخ القالب", "ok"); return redirect(url_for("admin.template_edit", tid=nid))
 
 
@@ -284,3 +282,20 @@ def audit_log():
     rows = c.execute(sql + " ORDER BY id DESC LIMIT 300", a).fetchall()
     ok, bad = audit_verify(c) if request.args.get("verify") else (None, None)
     return render_template("admin_audit.html", rows=rows, q=q, ok=ok, bad=bad)
+
+
+# ---------- حسابات البريد المرتبطة (OAuth) — إحصاءات بلا أي رموز ----------
+@bp.route("/email-accounts")
+@roles("admin")
+def email_accounts():
+    from . import emailconn
+    from .config import Cfg
+    return render_template("admin_email_accounts.html", S=emailconn.admin_stats(db()), smtp_ok=services.mail_configured(), mail_mode=Cfg.MAIL_MODE)
+
+
+@bp.route("/email-accounts/<int:cid>/remove", methods=["POST"])
+@roles("admin")
+def email_account_remove(cid):
+    from . import emailconn
+    flash("فُصل الحساب وحُذفت رموزه" if emailconn.remove_by_admin(db(), g.user, cid) else "غير موجود", "ok")
+    return redirect(url_for("admin.email_accounts"))

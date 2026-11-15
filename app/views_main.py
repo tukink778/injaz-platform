@@ -38,8 +38,9 @@ def dashboard():
         (SELECT COUNT(*) FROM participants WHERE event_id=e.id) n_part,
         (SELECT COUNT(*) FROM certificates WHERE event_id=e.id AND status='valid') n_cert
         FROM events e JOIN departments d ON d.id=e.dept_id WHERE 1=1{w} ORDER BY e.id DESC LIMIT 6""", a).fetchall()
-    months = c.execute(f"""SELECT strftime('%Y-%m', x.issued_at, 'unixepoch', '+4 hours') m, COUNT(*) n FROM certificates x JOIN events e ON e.id=x.event_id
-        WHERE x.status='valid'{w} GROUP BY m ORDER BY m DESC LIMIT 6""", a).fetchall()[::-1]
+    mexpr = c.month_of_epoch("x.issued_at")
+    months = c.execute(f"""SELECT {mexpr} m, COUNT(*) n FROM certificates x JOIN events e ON e.id=x.event_id
+        WHERE x.status='valid'{w} GROUP BY {mexpr} ORDER BY m DESC LIMIT 6""", a).fetchall()[::-1]
     if g.user["role"] == "admin":
         acts = c.execute("SELECT ts, username, action, target, detail FROM audit WHERE action IN (%s) ORDER BY id DESC LIMIT 8" % ",".join("?" * len(ACTION_AR)), tuple(ACTION_AR)).fetchall()
     else:
@@ -47,7 +48,10 @@ def dashboard():
     # أقرب خطوة تالية: أول فعالية تحتاج إجراءً
     nxt = c.execute(f"""SELECT e.id, e.title_ar, (SELECT COUNT(*) FROM participants WHERE event_id=e.id AND status='pending') pend,
         (SELECT COUNT(*) FROM participants p WHERE event_id=e.id AND status='approved' AND NOT EXISTS(SELECT 1 FROM certificates x WHERE x.participant_id=p.id AND x.status='valid')) uniss
-        FROM events e WHERE e.status!='closed'{w} ORDER BY (pend>0) DESC, (uniss>0) DESC, e.id DESC LIMIT 1""", a).fetchone()
+        FROM events e WHERE e.status!='closed'{w}
+        ORDER BY CASE WHEN (SELECT COUNT(*) FROM participants WHERE event_id=e.id AND status='pending')>0 THEN 0 ELSE 1 END,
+                 CASE WHEN (SELECT COUNT(*) FROM participants p WHERE event_id=e.id AND status='approved' AND NOT EXISTS(SELECT 1 FROM certificates x WHERE x.participant_id=p.id AND x.status='valid'))>0 THEN 0 ELSE 1 END,
+                 e.id DESC LIMIT 1""", a).fetchone()
     return render_template("dashboard.html", k=k, recent=recent, months=[(m, n) for m, n in months], acts=acts, ACTION_AR=ACTION_AR, nxt=nxt)
 
 
@@ -115,8 +119,7 @@ def event_new():
     if d:
         c = db()
         cols = ",".join(d) + ",reg_token,created_by,created_at"
-        c.execute(f"INSERT INTO events({cols}) VALUES({','.join('?'*(len(d)+3))})", (*d.values(), secrets.token_urlsafe(16), g.user["id"], int(time.time())))
-        eid = c.execute("SELECT last_insert_rowid()").fetchone()[0]
+        eid = c.insert(f"INSERT INTO events({cols}) VALUES({','.join('?'*(len(d)+3))})", (*d.values(), secrets.token_urlsafe(16), g.user["id"], int(time.time())))
         audit("event.create", f"event:{eid}", d["title_ar"])
         flash("تم إنشاء الفعالية. أضف المشاركين الآن", "ok")
         return redirect(url_for("main.flow", eid=eid, step=2))
@@ -168,15 +171,16 @@ def event_view(eid):
     tpl = c.execute("SELECT name FROM templates WHERE id=?", (ev["template_id"],)).fetchone()
     return render_template("event.html", ev=ev, parts=parts, cnt=cnt, ncert=ncert, nsent=nsent, to_issue=to_issue, flt=flt,
                            tpl_name=tpl["name"] if tpl else "—", reg_url=f"{Cfg.BASE_URL}/r/{ev['reg_token']}",
-                           mail_ok=services.mail_configured(), mail_mode=Cfg.MAIL_MODE)
+                           mail_senders=_senders(), mail_ok=bool(_senders()), mail_mode=Cfg.MAIL_MODE)
 
 
 # ---------- المشاركون ----------
 def _add_participant(c, ev, name, name_en, uid, email, spec, source, status, acad="", gender="", nat=""):
     key = blind("u", uid) if uid else blind("e", email)
-    c.execute("INSERT INTO participants(event_id,name_enc,name_en_enc,uid_enc,uid_idx,email_enc,email_idx,specialization,academic_status,gender,nationality,source,status,checked_in_at,created_at,dedupe) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-              (ev["id"], enc(name), enc(name_en), enc(uid), blind("u", uid), enc(email), blind("e", email), spec, acad, gender, nat, source, status,
-               int(time.time()) if source == "qr" else None, int(time.time()), key))
+    with c.txn():      # معاملة مستقلة (أو SAVEPOINT داخل معاملة الاستيراد): فشل صف مكرر لا يُفسد بقية الصفوف في PostgreSQL
+      c.execute("INSERT INTO participants(event_id,name_enc,name_en_enc,uid_enc,uid_idx,email_enc,email_idx,specialization,academic_status,gender,nationality,source,status,checked_in_at,created_at,dedupe) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                (ev["id"], enc(name), enc(name_en), enc(uid), blind("u", uid), enc(email), blind("e", email), spec, acad, gender, nat, source, status,
+                 int(time.time()) if source == "qr" else None, int(time.time()), key))
 
 
 @bp.route("/events/<int:eid>/participants/add", methods=["POST"])
@@ -285,16 +289,12 @@ def import_confirm(eid):
     good = services.stage_load(tok, g.user["id"])
     if good is None: flash("انتهت صلاحية المعاينة، أعد رفع الملف", "err"); return redirect(url_for("main.import_view", eid=eid))
     c = db(); n = 0; skipped = 0
-    c.execute("BEGIN")
-    try:
+    with c.txn():          # أي فشل غير متوقع يُلغي الاستيراد كله؛ الصف المكرر يُتخطّى عبر SAVEPOINT داخل _add_participant
         for r in good:
             try:
                 _add_participant(c, ev, r["name"], r["name_en"], r["uid"], r["email"], r["spec"], "excel", "approved", r.get("acad", ""), r.get("gender", ""), r.get("nat", "")); n += 1
             except Exception: skipped += 1
         c.execute("UPDATE events SET rows_total=rows_total+?, rows_invalid=rows_invalid+? WHERE id=?", (n + int(request.form.get("bad", 0) or 0) + skipped, int(request.form.get("bad", 0) or 0) + skipped, eid))
-        c.execute("COMMIT")
-    except Exception:
-        c.execute("ROLLBACK"); raise
     services.stage_drop(tok); audit("import.confirm", f"event:{eid}", f"n={n}")
     flash(f"تم استيراد {n} مشارك" + (f" (تخطي {skipped})" if skipped else ""), "ok")
     return redirect(url_for("main.flow", eid=eid, step=3))
@@ -354,16 +354,33 @@ def issue(eid):
     return redirect(url_for("main.job_page", jid=jid))
 
 
+def _senders():
+    from . import emailconn
+    return emailconn.sender_options(db(), g.user, services.mail_configured())
+
+
+def _pick_sender(choice):
+    """يحدد وسيلة الإرسال من اتصالات المنفِّذ نفسه فقط. يرجع (provider|None) أو يرمي LookupError."""
+    from . import emailconn
+    return emailconn.resolve_sender(db(), g.user, choice, services.mail_configured())
+
+
+NO_SENDER_MSG = "لا توجد وسيلة إرسال متاحة: اربط حساب بريدك من «حسابي» (Microsoft/Google) أو اطلب من المشرف ضبط SMTP."
+
+
 @bp.route("/events/<int:eid>/send", methods=["POST"])
 @roles("admin", "manager", "organizer")
 def send(eid):
     ev = event_or_404(eid); c = db()
-    if not services.mail_configured(): flash("البريد غير مُعدّ على الخادم", "err"); return _ret(eid)
+    try: provider = _pick_sender(request.form.get("sender", ""))
+    except LookupError: flash(NO_SENDER_MSG, "err"); return _ret(eid)
     only_failed = request.form.get("scope") != "all"
     q = "SELECT id FROM certificates WHERE event_id=? AND status='valid'" + ("" if not only_failed else " AND email_status!='sent'")
     ids = [r[0] for r in c.execute(q, (eid,))]
     if not ids: flash("لا توجد شهادات بانتظار الإرسال", "warn"); return _ret(eid)
-    jid = services.start_job(current_app._get_current_object(), "send", eid, g.user, len(ids), lambda cc, j, u: services.send_job(cc, j, u, eid, ids))
+    fallback = request.form.get("fallback") == "1"
+    jid = services.start_job(current_app._get_current_object(), "send", eid, g.user, len(ids),
+                             lambda cc, j, u: services.send_job(cc, j, u, eid, ids, provider, fallback))
     return redirect(url_for("main.job_page", jid=jid))
 
 
@@ -413,16 +430,20 @@ def cert_revoke(cid):
 @bp.route("/certs/<int:cid>/resend", methods=["POST"])
 @roles("admin", "manager", "organizer")
 def cert_resend(cid):
+    from . import emailconn
     x = _cert_or_404(cid)
     if x["status"] != "valid": abort(400)
     ev = event_or_404(x["event_id"])
     p = db().execute("SELECT * FROM participants WHERE id=?", (x["participant_id"],)).fetchone()
+    try: provider = _pick_sender(request.form.get("sender", ""))
+    except LookupError: flash(NO_SENDER_MSG, "err"); return _ret(x["event_id"])
     try:
-        services.send_cert_email(db(), x, dec(p["email_enc"]), dec(x["name_enc"]), ev, setting(db(), "attach_pdf", "0") == "1")
+        services.send_cert_email(db(), x, dec(p["email_enc"]), dec(x["name_enc"]), ev, setting(db(), "attach_pdf", "0") == "1",
+                                 dict(user_id=g.user["id"], provider=provider) if provider else None)
         db().execute("UPDATE certificates SET email_status='sent', email_sent_at=?, email_error='' WHERE id=?", (int(time.time()), cid))
         audit("cert.resend", x["serial"]); flash("أُعيد إرسال الشهادة", "ok")
     except Exception as e:
-        flash(f"تعذر الإرسال: {type(e).__name__}", "err")
+        flash(f"تعذر الإرسال: {emailconn.friendly_error(e)}", "err")
     return _ret(x["event_id"])
 
 
@@ -474,7 +495,7 @@ def flow(eid):
     if not 1 <= step <= 7:
         step = next((i + 1 for i, d in enumerate(st["done"]) if not d), 7)
     ctx = dict(ev=ev, step=step, steps=FLOW_STEPS, st=st, cnt=st["cnt"], ncert=st["ncert"], nsent=st["nsent"], to_issue=st["to_issue"],
-               mail_ok=services.mail_configured(), mail_mode=Cfg.MAIL_MODE, flow_next=f"/events/{eid}/flow?step={step}", flt=request.args.get("s", ""))
+               mail_senders=_senders(), mail_ok=bool(_senders()), mail_mode=Cfg.MAIL_MODE, flow_next=f"/events/{eid}/flow?step={step}", flt=request.args.get("s", ""))
     if step in (3,):
         flt = ctx["flt"]
         rows = c.execute("""SELECT p.*, x.id cid, x.serial, x.status cstatus, x.email_status, x.email_error FROM participants p

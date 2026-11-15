@@ -343,8 +343,7 @@ def designer_create():
     cfg = dict(src, primary=f.get("primary", ""), accent=f.get("accent", ""), orientation="portrait" if f.get("orientation") == "portrait" else "landscape")
     cfg = certs.clean_cfg(cfg)
     name = "تصميم مقترح: " + (clean_text(f.get("mood_name"), 40) or "جديد")
-    db().execute("INSERT INTO templates(name,config,created_at) VALUES(?,?,?)", (name, json.dumps(cfg, ensure_ascii=False), int(time.time())))
-    tid = db().execute("SELECT last_insert_rowid()").fetchone()[0]; audit("template.create", str(tid), "ai.designer")
+    tid = db().insert("INSERT INTO templates(name,config,created_at) VALUES(?,?,?)", (name, json.dumps(cfg, ensure_ascii=False), int(time.time()))); audit("template.create", str(tid), "ai.designer")
     flash("أُنشئ قالب من التصميم المقترح. عدّله بالمحرر المرئي ثم فعّله.", "ok")
     return redirect(url_for("admin.template_edit", tid=tid))
 

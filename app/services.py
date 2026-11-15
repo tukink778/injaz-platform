@@ -7,6 +7,7 @@ from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.worksheet.datavalidation import DataValidation
 from . import certs, choices
 from .config import Cfg, DATA
+from . import storage
 from .db import connect, setting, next_counter
 from .security import audit, blind, dec, enc_bytes, dec_bytes, token_hash
 from .util import cert_part, EMAIL_RE, UID_RE, clean_text, valid_name, new_verify_code
@@ -15,8 +16,7 @@ from .util import cert_part, EMAIL_RE, UID_RE, clean_text, valid_name, new_verif
 
 def start_job(app, kind, event_id, user, total, fn):
     c = connect()
-    c.execute("INSERT INTO jobs(kind,event_id,user_id,total,created_at) VALUES(?,?,?,?,?)", (kind, event_id, user["id"], total, int(time.time())))
-    jid = c.execute("SELECT last_insert_rowid()").fetchone()[0]
+    jid = c.insert("INSERT INTO jobs(kind,event_id,user_id,total,created_at) VALUES(?,?,?,?,?)", (kind, event_id, user["id"], total, int(time.time())))
     c.close()
     u = dict(user)
 
@@ -45,7 +45,7 @@ def org_for(ev):
 
 
 def cert_path(serial):
-    return DATA / "certs" / (re.sub(r"[^A-Za-z0-9\-]", "", serial) + ".pdf.enc")
+    return storage.certs.path(serial)      # المسار كما كان؛ الكتابة/القراءة عبر طبقة storage
 
 
 def issue_certs(c, jid, user, event_id, pids):
@@ -59,15 +59,14 @@ def issue_certs(c, jid, user, event_id, pids):
             if not p or c.execute("SELECT 1 FROM certificates WHERE participant_id=? AND status='valid'", (pid,)).fetchone():
                 _tick(c, jid); continue
             try:
-                c.execute("BEGIN IMMEDIATE")
-                n = next_counter(c, f"serial:{ev['dept_code']}:{year}")
-                serial = f"{ev['dept_code']}-{year}-{n:05d}"
-                code = new_verify_code()
-                c.execute("COMMIT")
+                with c.txn(immediate=True):
+                    n = next_counter(c, f"serial:{ev['dept_code']}:{year}")
+                    serial = f"{ev['dept_code']}-{year}-{n:05d}"
+                    code = new_verify_code()
                 url = f"{Cfg.BASE_URL}/v/{code}"
                 part = cert_part(p)
                 pdf = r.pdf(certs.build_html(tpl, ev, part, serial, url, org_for(ev)), certs.page_size(tpl))
-                cert_path(serial).write_bytes(enc_bytes(pdf))
+                storage.certs.save(serial, enc_bytes(pdf))
                 c.execute("INSERT INTO certificates(participant_id,event_id,serial,verify_code,name_enc,issued_at,issued_by,file) VALUES(?,?,?,?,?,?,?,?)",
                           (pid, event_id, serial, code, p["name_enc"], int(time.time()), user["id"], cert_path(serial).name))
                 _tick(c, jid)
@@ -82,7 +81,7 @@ def issue_certs(c, jid, user, event_id, pids):
 
 
 def read_cert_pdf(cert):
-    return dec_bytes(cert_path(cert["serial"]).read_bytes())
+    return dec_bytes(storage.certs.load(cert["serial"]))
 
 
 # ================= البريد =================
@@ -103,7 +102,8 @@ DEFAULT_BODY = ("عزيزي/عزيزتي {name}،\nيسعدنا إبلاغك ب�
                 "رقم الشهادة: {serial}\nرمز التحقق: {code}\n\n— — —\nDear {name},\nYour certificate for \"{event}\" is ready. Download it securely here:\n{link}")
 
 
-def send_cert_email(c, cert, to_addr, name, ev, attach):
+def _cert_message(c, cert, to_addr, name, ev, attach):
+    """يبني رسالة الشهادة (القالب الحالي دون تغيير). المرسِل الافتراضي = SMTP المركزي ويُستبدل عند الإرسال بحساب المستخدم."""
     link_tok = new_download_token(c, cert["id"])
     link = f"{Cfg.BASE_URL}/get/{link_tok}"
     vals = dict(name=name, event=ev["title_ar"], dept=ev["dept_ar"], link=link, serial=cert["serial"], code=cert["verify_code"])
@@ -119,6 +119,15 @@ def send_cert_email(c, cert, to_addr, name, ev, attach):
     msg.set_content(body)
     if attach:
         msg.add_attachment(read_cert_pdf(cert), maintype="application", subtype="pdf", filename=f"{cert['serial']}.pdf")
+    return msg
+
+
+def send_cert_email(c, cert, to_addr, name, ev, attach, sender=None):
+    """sender=None: النظام المركزي (SMTP/ملف) كما كان. sender=dict(user_id, provider): إرسال من حساب المستخدم المرتبط (OAuth)."""
+    msg = _cert_message(c, cert, to_addr, name, ev, attach)
+    if sender:
+        from . import emailconn
+        return emailconn.send_as_user(c, sender, msg)
     if Cfg.MAIL_MODE == "file":
         (DATA / "outbox" / f"{cert['serial']}.eml").write_bytes(bytes(msg))
         return
@@ -134,24 +143,39 @@ def send_cert_email(c, cert, to_addr, name, ev, attach):
         s.quit()
 
 
-def send_job(c, jid, user, event_id, cert_ids):
+def send_job(c, jid, user, event_id, cert_ids, provider=None, fallback=False):
+    """provider: مفتاح مزوّد OAuth لإرسال الشهادات من حساب المنفِّذ نفسه (user["id"])؛ None = البريد المركزي.
+    fallback: عند انتهاء اتصال الحساب، أكمل الباقي عبر SMTP المركزي (بموافقة المستخدم الصريحة فقط)."""
+    from . import emailconn, mailproviders
     ev = c.execute("SELECT e.*, d.name_ar dept_ar FROM events e JOIN departments d ON d.id=e.dept_id WHERE e.id=?", (event_id,)).fetchone()
     attach = setting(c, "attach_pdf", "0") == "1"
+    sender = dict(user_id=user["id"], provider=provider) if provider else None      # دائماً مستخدم المهمة، لا مستخدم آخر
+    gap = mailproviders.get(provider).min_interval if provider else 0.2
+    dead = ""
     for cid in cert_ids:
         cert = c.execute("SELECT * FROM certificates WHERE id=? AND status='valid'", (cid,)).fetchone()
         if not cert: _tick(c, jid); continue
+        if dead:    # الاتصال انتهى: لا نكرر الطلبات الفاشلة
+            c.execute("UPDATE certificates SET email_status='failed', email_error=? WHERE id=?", (dead, cid)); _tick(c, jid, False); continue
         p = c.execute("SELECT * FROM participants WHERE id=?", (cert["participant_id"],)).fetchone()
         email = dec(p["email_enc"])
         if not EMAIL_RE.match(email):
             c.execute("UPDATE certificates SET email_status='failed', email_error='لا يوجد بريد صالح' WHERE id=?", (cid,)); _tick(c, jid, False); continue
         try:
-            send_cert_email(c, cert, email, dec(cert["name_enc"]), ev, attach)
+            try:
+                send_cert_email(c, cert, email, dec(cert["name_enc"]), ev, attach, sender)
+            except emailconn.ConnectionExpired as e:
+                if fallback and mail_configured() and sender:
+                    sender = None; gap = 0.2; audit("certs.email_fallback", f"event:{event_id}", "oauth_expired->smtp", conn=c, user=user)
+                    send_cert_email(c, cert, email, dec(cert["name_enc"]), ev, attach, None)
+                else:
+                    dead = emailconn.friendly_error(e); raise
             c.execute("UPDATE certificates SET email_status='sent', email_sent_at=?, email_error='' WHERE id=?", (int(time.time()), cid)); _tick(c, jid)
-            time.sleep(0.2)
+            time.sleep(gap)
         except Exception as e:
-            c.execute("UPDATE certificates SET email_status='failed', email_error=? WHERE id=?", (type(e).__name__, cid)); _tick(c, jid, False)
+            c.execute("UPDATE certificates SET email_status='failed', email_error=? WHERE id=?", (emailconn.friendly_error(e), cid)); _tick(c, jid, False)
     n = c.execute("SELECT done-failed ok, failed FROM jobs WHERE id=?", (jid,)).fetchone()
-    audit("certs.email", f"event:{event_id}", f"ok={n['ok']} failed={n['failed']}", conn=c, user=user)
+    audit("certs.email", f"event:{event_id}", f"ok={n['ok']} failed={n['failed']} via={provider or 'smtp'}", conn=c, user=user)
     return f"أُرسلت {n['ok']} رسالة" + (f"، وفشل {n['failed']}" if n["failed"] else "")
 
 

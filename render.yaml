@@ -1,0 +1,30 @@
+# Render Blueprint (اختياري). لا أسرار هنا: كل المتغيرات sync:false تُدخل يدوياً في لوحة Render.
+services:
+  - type: web
+    name: injaz
+    runtime: docker
+    plan: starter            # القرص الدائم يتطلب خطة مدفوعة؛ الخطة المجانية بقرص مؤقت (انظر docs/POSTGRES_NEON_RENDER.md)
+    healthCheckPath: /healthz
+    # disk:                  # فعّله عند الحاجة لحفظ ملفات PDF دائماً (يتطلب خطة مدفوعة)
+    #   name: injaz-data
+    #   mountPath: /app/data
+    #   sizeGB: 5
+    envVars:
+      - key: DATABASE_URL           # رابط Neon (pooled) — أدخله يدوياً
+        sync: false
+      - key: INJAZ_MASTER_KEY       # مفتاح التشفير الدائم — أدخله يدوياً ولا تولّده تلقائياً
+        sync: false
+      - key: INJAZ_BASE_URL         # مثال: https://injaz.onrender.com
+        sync: false
+      - key: INJAZ_ALLOWED_HOSTS
+        sync: false
+      - key: INJAZ_HTTPS
+        value: "1"
+      - key: INJAZ_BEHIND_PROXY
+        value: "1"
+      - key: INJAZ_TRUSTED_PROXY
+        value: "*"
+      - key: INJAZ_PROXY_COUNT
+        value: "1"
+      - key: INJAZ_DB_POOL_MAX
+        value: "8"

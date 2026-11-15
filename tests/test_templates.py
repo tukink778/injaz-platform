@@ -36,14 +36,14 @@ def run():
     # 5) لا يمكن تعطيل آخر قالب مفعّل
     ids = [r["id"] for r in db.execute("SELECT id FROM templates WHERE active=1")]
     for i in ids[:-1]: db.execute("UPDATE templates SET active=0 WHERE id=?", (i,))
-    db.commit(); last = ids[-1]
+    last = ids[-1]
     post(cl, f"/admin/templates/{last}/toggle", page="/admin/templates"); assert tpl(last)["active"] == 1
     for i in ids[:-1]: db.execute("UPDATE templates SET active=1 WHERE id=?", (i,))
-    db.commit()
+    pass
     # 6) الحذف: قالب مرتبط بفعالية يتطلب نقلاً صريحاً
     dept = db.execute("SELECT id FROM departments LIMIT 1").fetchone()
     if not dept: db.execute("INSERT INTO departments(name_ar,name_en) VALUES('قسم','Dept')"); dept = db.execute("SELECT id FROM departments LIMIT 1").fetchone()
-    db.execute("INSERT INTO events(dept_id,title_ar,event_date,template_id,reg_token,created_at) VALUES(?,'فعالية اختبار','2026-01-01',?,'tok-test-1',0)", (dept["id"], did)); db.commit()
+    db.execute("INSERT INTO events(dept_id,title_ar,event_date,template_id,reg_token,created_at) VALUES(?,'فعالية اختبار','2026-01-01',?,'tok-test-1',0)", (dept["id"], did))
     ev = db.execute("SELECT id FROM events WHERE template_id=?", (did,)).fetchone()["id"]
     assert cl.get(f"/admin/templates/{did}/delete").status_code == 200
     post(cl, f"/admin/templates/{did}/delete", dict(confirm="yes"), page=f"/admin/templates/{did}/delete"); assert tpl(did) is not None, "حُذف بلا نقل!"
@@ -53,7 +53,7 @@ def run():
     b = db.execute("SELECT id FROM templates WHERE builtin=1 AND id NOT IN (SELECT template_id FROM events WHERE template_id IS NOT NULL) LIMIT 1").fetchone()["id"]
     post(cl, f"/admin/templates/{b}/delete", dict(confirm="yes"), page=f"/admin/templates/{b}/delete"); assert tpl(b) is None
     # 8) الصلاحيات: منظّم عادي ممنوع
-    db.execute("INSERT INTO users(username,full_name,pw_hash,role,must_change_pw,created_at) VALUES('org','منظم',?,'organizer',0,0)", (T.hash_pw("Org-Pass-12345!"),)); db.commit()
+    db.execute("INSERT INTO users(username,full_name,pw_hash,role,must_change_pw,created_at) VALUES('org','منظم',?,'organizer',0,0)", (T.hash_pw("Org-Pass-12345!"),))
     oc = app.test_client(); assert login(oc, "org", "Org-Pass-12345!").status_code == 302
     for u in ("/admin/templates", f"/admin/templates/{tid}", "/admin/templates/live"): assert oc.get(u).status_code in (403, 405), u
     rr = oc.post(f"/admin/templates/{tid}/toggle", data=dict(_csrf=tok(oc, "/"))); assert rr.status_code == 403, rr.status_code

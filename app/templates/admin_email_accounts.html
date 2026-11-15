@@ -1,0 +1,20 @@
+{% extends "base.html" %}{% block title %}حسابات البريد المرتبطة{% endblock %}
+{% block content %}<div class="top"><div><h1>حسابات البريد المرتبطة · Email Accounts</h1><p class="muted">إحصاءات الربط عبر OAuth. لا تُعرض هنا أي كلمات مرور أو رموز مصادقة أو محتوى رسائل، ولا يملك النظام ذلك أصلاً.</p></div><a class="btn" href="{{ url_for('admin.settings') }}">الإعدادات</a></div>
+{% if not S.https_ok %}<div class="flash warn">عنوان الموقع (INJAZ_BASE_URL) ليس HTTPS: مزودو OAuth معطَّلون. استخدم HTTPS (يُسمح بـ localhost للتجربة فقط).</div>{% endif %}
+<div class="grid g3" style="margin-bottom:18px">
+<div class="card"><div class="muted small">حسابات مرتبطة</div><div style="font-size:2rem;font-weight:800;line-height:1.2">{{ S.total }}</div></div>
+<div class="card"><div class="muted small">متصلة</div><div style="font-size:2rem;font-weight:800;line-height:1.2">{{ S.ok }}</div></div>
+<div class="card"><div class="muted small">تحتاج إعادة ربط</div><div style="font-size:2rem;font-weight:800;line-height:1.2">{{ S.bad }}</div></div></div>
+<div class="card"><h2>المزوّدون</h2><div class="tbl-wrap"><table><tr><th>المزوّد</th><th>حالة الإعداد على الخادم</th><th>متصل</th><th>يحتاج إعادة ربط</th></tr>
+{% for p in S.providers %}<tr><td><b>{{ p.label }}</b></td><td>{% if p.ready %}<span class="badge ok">مفعّل</span>{% elif p.configured %}<span class="badge warn">يتطلب HTTPS</span>{% else %}<span class="badge">غير مضبوط</span> <span class="small muted ltr">{{ p.env[0] }} / {{ p.env[1] }}</span>{% endif %}</td>
+<td>{{ S.by|selectattr('provider','equalto',p.key)|selectattr('st','equalto','connected')|map(attribute='n')|sum }}</td><td>{{ S.by|selectattr('provider','equalto',p.key)|selectattr('st','equalto','needs_reconnect')|map(attribute='n')|sum }}</td></tr>{% endfor %}
+<tr><td><b>SMTP المركزي (احتياطي)</b></td><td>{% if smtp_ok %}<span class="badge {{ 'warn' if mail_mode=='file' else 'ok' }}">{{ 'وضع الاختبار' if mail_mode=='file' else 'مفعّل' }}</span>{% else %}<span class="badge">غير مضبوط</span>{% endif %}</td><td>—</td><td>—</td></tr></table></div></div>
+<div class="card"><h2>الاتصالات</h2>{% if S.conns %}<div class="tbl-wrap"><table><tr><th>المستخدم</th><th>المزوّد</th><th>البريد</th><th>الحالة</th><th>آخر استخدام</th><th>آخر خطأ</th><th></th></tr>
+{% for r in S.conns %}<tr><td>{{ r.full_name }}<div class="small muted ltr">{{ r.username }}</div></td><td>{{ r.provider }}</td><td class="ltr small">{{ r.email_address }}</td>
+<td><span class="badge {{ 'ok' if r.connection_status=='connected' else 'warn' }}">{{ 'متصل' if r.connection_status=='connected' else 'يحتاج إعادة ربط' }}</span></td>
+<td class="small">{{ ts_fmt(r.last_used_at) if r.last_used_at else '—' }}</td><td class="small ltr">{{ r.last_error or '—' }}</td>
+<td><form method="post" action="{{ url_for('admin.email_account_remove', cid=r.id) }}" data-confirm="فصل هذا الحساب وحذف رموزه؟ (مثلاً عند مغادرة الموظف)">{{ m.csrf() }}<button class="btn sm">فصل</button></form></td></tr>{% endfor %}</table></div>
+{% else %}{{ m.empty('mail', 'لا توجد حسابات مرتبطة بعد', 'يربط كل مستخدم حسابه من صفحة «حسابي».') }}{% endif %}</div>
+<div class="card"><h2>آخر أخطاء الربط والإرسال</h2>{% if S.errs %}<div class="tbl-wrap"><table><tr><th>الوقت</th><th>المستخدم</th><th>الحدث</th><th>المزوّد</th><th>الرمز</th></tr>
+{% for e in S.errs %}<tr><td class="small">{{ ts_fmt(e.ts) }}</td><td class="ltr small">{{ e.username }}</td><td class="small">{{ e.action }}</td><td class="small">{{ e.target }}</td><td class="small ltr">{{ e.detail }}</td></tr>{% endfor %}</table></div>
+{% else %}<p class="muted">لا أخطاء.</p>{% endif %}</div>{% endblock %}

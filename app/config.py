@@ -30,7 +30,21 @@ try:
 except OSError:
     pass
 
-DB_PATH = DATA / "injaz.db"
+DB_PATH = DATA / "injaz.db"      # SQLite المحلي (يُستخدم فقط عند غياب DATABASE_URL)
+
+
+def _db_url() -> str:
+    """رابط PostgreSQL من DATABASE_URL (معيار Render/Neon) أو INJAZ_DATABASE_URL. لا يُطبع ولا يُسجَّل في أي مكان."""
+    u = (os.environ.get("DATABASE_URL") or os.environ.get("INJAZ_DATABASE_URL") or "").strip()
+    if u.startswith("postgres://"):
+        u = "postgresql://" + u[len("postgres://"):]
+    if u and not u.startswith("postgresql://"):
+        raise SystemExit("DATABASE_URL يجب أن يبدأ بـ postgresql:// (انسخه من لوحة Neon).")
+    return u
+
+
+DATABASE_URL = _db_url()
+IS_PG = bool(DATABASE_URL)
 
 
 def _load_master() -> bytes:
@@ -40,6 +54,12 @@ def _load_master() -> bytes:
     f = DATA / ".keys"
     if f.exists():
         return base64.urlsafe_b64decode(json.loads(f.read_text())["master"])
+    if IS_PG or os.environ.get("INJAZ_REQUIRE_MASTER_KEY") == "1":
+        # بيئة إنتاج: القرص قد يكون مؤقتاً (Render). توليد مفتاح جديد عند كل نشر = فقدان كل البيانات المشفّرة. نرفض البدء.
+        raise SystemExit("INJAZ_MASTER_KEY غير مضبوط. في الإنتاج (DATABASE_URL) يجب ضبط المفتاح الرئيسي كمتغير بيئة سري ودائم؛ "
+                         "لن يُولَّد مفتاح جديد تلقائياً. لتوليده مرة واحدة: "
+                         "python -c \"import secrets,base64;print(base64.urlsafe_b64encode(secrets.token_bytes(32)).decode())\" "
+                         "ثم احفظه في Render وفي مكان آمن خارجه. (إن كانت لديك بيانات سابقة فاستخدم مفتاحها الأصلي نفسه.)")
     k = secrets.token_bytes(32)
     fd = os.open(f, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
     with os.fdopen(fd, "w") as fh:
@@ -78,3 +98,11 @@ class Cfg:
     ALLOWED_HOSTS = [h.strip().lower() for h in env("INJAZ_ALLOWED_HOSTS").split(",") if h.strip()]  # اختياري: يرفض أي Host آخر
     BACKUP_KEEP = int(env("INJAZ_BACKUP_KEEP", "14"))
     REG_MIN_SECONDS = float(env("INJAZ_REG_MIN_SECONDS", "3"))
+    # ---- PostgreSQL ----
+    DB_POOL_MAX = max(2, int(env("INJAZ_DB_POOL_MAX", "12")))         # أقصى اتصالات لكل نسخة تطبيق
+    DB_CONNECT_WAIT = float(env("INJAZ_DB_CONNECT_WAIT", "30"))       # ثوانٍ؛ Neon قد يحتاج بضع ثوانٍ لإيقاظ الحاسوب الخامل
+    DB_SSLMODE = env("INJAZ_DB_SSLMODE")                              # افتراضياً require لغير المحلي
+    DB_SCHEMA = env("INJAZ_DB_SCHEMA")                                # اختياري: schema مخصص بدل public (للاختبار/العزل)
+    STORAGE_BACKEND = env("INJAZ_STORAGE_BACKEND", "local")           # local فقط حالياً (انظر app/storage.py)
+    TRUSTED_PROXY = env("INJAZ_TRUSTED_PROXY")                        # عنوان/عناوين الوكيل الموثوق (يُستخدم مع INJAZ_BEHIND_PROXY=1)
+    PROXY_COUNT = int(env("INJAZ_PROXY_COUNT", "0"))                  # عدد الوكلاء الموثوقين أمام التطبيق (مهم لعنوان العميل الحقيقي)

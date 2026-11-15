@@ -1,6 +1,6 @@
 # منصة إنجاز INJAZ — إصدار وإدارة الشهادات الإلكترونية
 
-تطبيق ويب (Flask + SQLite) لإصدار الشهادات وإرسالها بالبريد وأرشفتها وإحصائها، مع تشفير البيانات الشخصية.
+تطبيق ويب (Flask + SQLite محلياً / PostgreSQL في الإنتاج) لإصدار الشهادات وإرسالها بالبريد وأرشفتها وإحصائها، مع تشفير البيانات الشخصية.
 **Developed & Programmed by: TURKI ALALAWI**
 
 ## 1) هيكل المشروع
@@ -9,7 +9,9 @@ app/                الخلفية والواجهة (Flask + Jinja + CSS/JS ثا
   migrations/       هجرات القاعدة (تُطبَّق تلقائياً عند التشغيل)
   templates/ static/
 deploy/             Caddyfile · nginx.conf · injaz.service (systemd) · backup.cron
-docs/schema.sql     مخطط القاعدة (للمرجعية)
+docs/schema.sql · schema.postgres.sql   مخطط القاعدة (للمرجعية)
+docs/POSTGRES_NEON_RENDER.md   دليل PostgreSQL (Neon) والنشر على Render
+render.yaml         مخطط نشر Render (بلا أسرار)
 tests/              اختبارات آلية (run_all.py يشغّلها كلها)
 .env.example        كل متغيرات البيئة موثّقة
 Dockerfile · docker-compose.yml
@@ -48,12 +50,16 @@ python wsgi.py                             # http://127.0.0.1:8080
 - SQLite في `data/injaz.db` (تُنشأ تلقائياً). المسار قابل للتغيير بـ `INJAZ_DATA_DIR` (ضعه على قرص دائم).
 - **الهجرات:** `app/migrations/mNNNN_*.py`، تُطبَّق تلقائياً عند التشغيل، ويمكن تشغيلها يدوياً: `python manage.py migrate`. المخطط الكامل في `docs/schema.sql`.
 - الأسماء والبريد والأرقام الجامعية وملفات PDF **مشفّرة على القرص**؛ البحث عبر فهارس مجزّأة (HMAC).
-- يكفي SQLite لآلاف الشهادات سنوياً. للنقل إلى PostgreSQL مستقبلاً يلزم تعديل طبقة `app/db.py`.
+- **PostgreSQL (Neon):** اضبط `DATABASE_URL` فتُستخدم PostgreSQL تلقائياً (وإلا SQLite). مفتاح `INJAZ_MASTER_KEY` إلزامي في هذا الوضع. التفاصيل الكاملة، الإعداد على Render وNeon، وحفظ المفتاح والملفات: `docs/POSTGRES_NEON_RENDER.md`. الفحص الصحي: `/healthz`.
 
 ## 6) البريد الإلكتروني (SMTP)
 بدون `INJAZ_SMTP_HOST` يعمل النظام بوضع الاختبار (الرسائل تُحفظ في `data/outbox`).
 Gmail: خادم `smtp.gmail.com` منفذ `587` أمان `starttls` وكلمة مرور تطبيق (App Password) وليس كلمة مرور الحساب. بريد الجامعة: اسأل تقنية المعلومات (غالباً Office 365: `smtp.office365.com:587`) وفضّل حساباً مخصصاً للنظام.
 القيم كلها في `.env` (انظر `.env.example`).
+
+## 6.5) ربط بريد كل موظف (OAuth 2.0)
+كل موظف يربط Outlook/Microsoft 365 أو Gmail/Google Workspace من **حسابي ← حسابات البريد** ويرسل الشهادات من بريده دون مشاركة كلمة المرور (Microsoft Graph وGmail API، صلاحية الإرسال فقط، رموز مشفّرة AES-256-GCM). SMTP المركزي يبقى احتياطياً.
+الإعداد الكامل (Microsoft Entra وGoogle Cloud وRedirect URIs والمتغيرات والتقرير الأمني وإضافة مزوّد جديد): **`docs/EMAIL_INTEGRATION.md`**.
 
 ## 7) النشر على الإنترنت
 **المتطلبات الخارجية (لا يمكن تجهيزها من داخل المشروع):** سيرفر Linux (VPS) بعنوان عام · دومين وسجل DNS من نوع A · حساب SMTP · مكان آمن لنسخة مفتاح التشفير.
@@ -92,4 +98,4 @@ docker compose exec injaz python manage.py init     # مرة واحدة: حسا�
 ```bash
 python tests/run_all.py
 ```
-يشغّل: الهجرات · القوالب والمحرر المرئي · الرحلة الكاملة (إدخال، Excel، QR، اعتماد، إصدار PDF، تحقق، تحميل، بريد، بحث، أرشيف) · مصفوفة الصلاحيات لكل دور.
+مع `DATABASE_URL` لقاعدة اختبار يعمل على PostgreSQL ويضيف `test_postgres.py` (تزامن، نسخ/استعادة، مفتاح التشفير...). يشغّل: الهجرات · ربط البريد OAuth · القوالب والمحرر المرئي · الرحلة الكاملة (إدخال، Excel، QR، اعتماد، إصدار PDF، تحقق، تحميل، بريد، بحث، أرشيف) · مصفوفة الصلاحيات لكل دور.

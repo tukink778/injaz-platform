@@ -111,7 +111,7 @@ def audit(action, target="", detail="", conn=None, user=None):
         ip = client_ip()
     except RuntimeError:
         ip = "-"
-    with _audit_lock:
+    with _audit_lock, c.audit_guard():   # PostgreSQL: قفل استشاري على مستوى القاعدة يحمي السلسلة عبر عدة عمليات/نسخ
         row = c.execute("SELECT hash FROM audit ORDER BY id DESC LIMIT 1").fetchone()
         prev = row["hash"] if row else "GENESIS"
         ts = int(time.time())

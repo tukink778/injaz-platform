@@ -7,3 +7,5 @@ cryptography==50.0.1
 pyotp==2.10.0
 pypdf==7.1.0
 playwright==1.63.0
+psycopg[binary]==3.3.9
+psycopg_pool==3.3.3

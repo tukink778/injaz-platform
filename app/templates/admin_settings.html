@@ -1,5 +1,5 @@
 {% extends "base.html" %}{% block title %}الإعدادات{% endblock %}
-{% block content %}<div class="top"><div><h1>الإعدادات</h1></div></div>
+{% block content %}<div class="top"><div><h1>الإعدادات</h1></div><a class="btn" href="{{ url_for('admin.email_accounts') }}">{{ m.ico('mail') }} حسابات البريد المرتبطة</a></div>
 <form method="post" class="grid">{{ m.csrf() }}
 <div class="card"><h2>{{ m.ico('shield') }} الأمان والخصوصية</h2>
 <label class="chk"><input type="checkbox" name="require_2fa" {{ 'checked' if s.require_2fa=='1' }}> إلزام المشرفين العامين بالتحقق بخطوتين (2FA)</label>

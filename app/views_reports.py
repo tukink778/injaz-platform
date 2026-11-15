@@ -110,7 +110,7 @@ def compute_stats(f):
     r = c.execute("SELECT COALESCE(SUM(e.rows_total),0), COALESCE(SUM(e.rows_invalid),0) FROM events e WHERE 1=1" + ev_w, ev_a).fetchone()
     S["accuracy"] = round(100 * (1 - r[1] / r[0]), 1) if r[0] else None
     S["mail_pct"] = None
-    m = c.execute("SELECT SUM(x.email_status='sent'), COUNT(*) " + base, a).fetchone()
+    m = c.execute("SELECT SUM(CASE WHEN x.email_status='sent' THEN 1 ELSE 0 END), COUNT(*) " + base, a).fetchone()
     S["mail_pct"] = round(100 * (m[0] or 0) / m[1], 1) if m[1] else 0
     S["by_dept"] = [(r[0], r[1]) for r in one("SELECT d.name_ar, COUNT(*) n " + base + " GROUP BY d.id ORDER BY n DESC")]
     S["by_spec"] = [(r[0] or "غير محدد", r[1]) for r in one("SELECT p.specialization, COUNT(*) n " + base + " GROUP BY p.specialization ORDER BY n DESC LIMIT 15")]
@@ -132,7 +132,7 @@ def stats():
     if g.user["role"] in ("admin", "manager"):
         w, a = _where(f)
         for r in db().execute("""SELECT CASE WHEN p.uid_idx!='' THEN p.uid_idx ELSE p.email_idx END k, COUNT(*) n, MAX(x.id) mx, SUM(e.hours) h
-            FROM certificates x JOIN events e ON e.id=x.event_id JOIN participants p ON p.id=x.participant_id WHERE x.status='valid' AND k!=''""" + w + " GROUP BY k ORDER BY n DESC LIMIT 8", a):
+            FROM certificates x JOIN events e ON e.id=x.event_id JOIN participants p ON p.id=x.participant_id WHERE x.status='valid' AND (CASE WHEN p.uid_idx!='' THEN p.uid_idx ELSE p.email_idx END)!=''""" + w + " GROUP BY k ORDER BY n DESC LIMIT 8", a):
             nm = db().execute("SELECT name_enc FROM certificates WHERE id=?", (r["mx"],)).fetchone()
             top_people.append((dec(nm[0]), r["n"], r["h"], r["k"]))
     return render_template("stats.html", S=S, f=f, depts=depts, years=years, specs=specs, cats=CATEGORIES, top_people=top_people)

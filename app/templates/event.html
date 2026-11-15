@@ -20,7 +20,7 @@
 <div class="card"><div class="grid g2"><div><h2>{{ m.ico('shield') }} الإصدار والإرسال</h2>
 <p class="muted">بانتظار الإصدار: <b>{{ to_issue }}</b> · صادرة: <b>{{ ncert }}</b> · أُرسلت: <b>{{ nsent }}</b></p>
 <div class="btns"><form method="post" action="{{ url_for('main.issue', eid=ev.id) }}">{{ m.csrf() }}<button class="btn or" {{ 'disabled' if not to_issue }} data-confirm="إصدار {{ to_issue }} شهادة؟">{{ m.ico('check') }} إصدار الشهادات ({{ to_issue }})</button></form>
-<form method="post" action="{{ url_for('main.send', eid=ev.id) }}">{{ m.csrf() }}<button class="btn pri" {{ 'disabled' if not (ncert-nsent) or not mail_ok }} data-confirm="إرسال الشهادات للبريد؟">{{ m.ico('mail') }} إرسال للبريد ({{ ncert-nsent }})</button></form></div>
+<form method="post" action="{{ url_for('main.send', eid=ev.id) }}" class="sendform">{{ m.csrf() }}{{ m.sender_select(mail_senders) }}<button class="btn pri" {{ 'disabled' if not (ncert-nsent) or not mail_ok }} data-confirm="إرسال الشهادات للبريد؟">{{ m.ico('mail') }} إرسال للبريد ({{ ncert-nsent }})</button></form></div>
 {% if mail_mode=='file' %}<p class="small muted">⚠ وضع الاختبار: الرسائل تُحفظ في مجلد data/outbox ولا تُرسل فعلياً حتى تضبط SMTP.</p>{% endif %}</div>
 <div><h2>{{ m.ico('dl') }} التصدير</h2><div class="btns"><a class="btn" href="{{ url_for('main.event_zip', eid=ev.id) }}">ZIP (ملف لكل شهادة)</a><a class="btn" href="{{ url_for('main.event_print', eid=ev.id) }}" target="_blank">PDF واحد للطباعة</a></div></div></div></div>
 {% if g.user.role in ('admin','manager') %}<form method="post" action="{{ url_for('main.event_delete', eid=ev.id) }}" data-confirm="حذف الفعالية ومشاركيها نهائياً؟" style="margin-top:14px">{{ m.csrf() }}<button class="btn sm danger">حذف الفعالية</button></form>{% endif %}

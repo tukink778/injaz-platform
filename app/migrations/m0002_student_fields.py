@@ -3,7 +3,7 @@ DESCRIPTION = "participants: academic_status, gender, nationality"
 
 
 def up(c):
-    have = {r[1] for r in c.execute("PRAGMA table_info(participants)")}
+    have = c.columns("participants")      # يعمل على SQLite وPostgreSQL
     for col in ("academic_status", "gender", "nationality"):
         if col not in have:
             c.execute(f"ALTER TABLE participants ADD COLUMN {col} TEXT NOT NULL DEFAULT ''")

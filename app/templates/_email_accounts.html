@@ -1,0 +1,17 @@
+<div class="card" id="email"><h2>{{ m.ico('mail') }} حسابات البريد · Email Accounts</h2>
+<p class="muted">اربط بريدك لإرسال الشهادات باسمك. تسجّل الدخول عند المزوّد نفسه ولا تُدخل كلمة مرور بريدك هنا أبداً، ولا يطلب النظام إلا صلاحية <b>إرسال</b> الرسائل (لا قراءة ولا حذف). يمكنك الفصل في أي وقت.
+<span class="ltr" style="display:block">Connect your mailbox to send certificates as yourself. You sign in at the provider; INJAZ never sees your password and only asks for the <b>send</b> permission.</span></p>
+{% if not email_https %}<div class="flash warn">الربط يتطلب HTTPS على عنوان الموقع. اطلب من المشرف ضبط INJAZ_BASE_URL.</div>{% endif %}
+{% for p in email_providers %}{% set cn = p.conn %}
+<div style="display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;border-top:1px solid var(--line);padding:14px 0">
+<div style="min-width:240px"><b>{{ p.label_ar }}</b><div class="small muted ltr">{{ p.label_en }}</div>
+{% if cn %}<div class="small" style="margin-top:6px"><span class="muted">البريد · Email:</span> <span class="ltr">{{ cn.email_address }}</span></div>
+<div class="small muted">آخر اتصال ناجح · Last success: {{ ts_fmt(cn.last_success_at) if cn.last_success_at else '—' }} · آخر استخدام · Last used: {{ ts_fmt(cn.last_used_at) if cn.last_used_at else '—' }}</div>
+{% if cn.connection_status != 'connected' %}<div class="small" style="color:var(--err);margin-top:4px">انتهت صلاحية الاتصال أو أُلغي التفويض. أعد الربط. <span class="ltr muted">({{ cn.last_error or 'expired' }})</span></div>{% elif cn.last_error %}<div class="small muted">آخر خطأ: <span class="ltr">{{ cn.last_error }}</span></div>{% endif %}{% endif %}</div>
+<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+{% if cn and cn.connection_status == 'connected' %}<span class="badge ok">متصل · Connected</span>
+{% elif cn %}<span class="badge warn">يحتاج إعادة ربط · Reconnect needed</span>
+{% else %}<span class="badge">غير متصل · Disconnected</span>{% endif %}
+{% if p.ready %}<a class="btn {{ '' if cn and cn.connection_status=='connected' else 'pri' }}" href="{{ url_for('emailconn.connect', provider=p.key, n=p.nonce) }}">{{ 'إعادة الربط · Reconnect' if cn else 'ربط · Connect' }} {{ p.label_en.split(' (')[0] }}</a>
+{% else %}<span class="small muted">غير مفعّل على الخادم — اطلب من المشرف</span>{% endif %}
+{% if cn %}<form method="post" action="{{ url_for('emailconn.disconnect', provider=p.key) }}" data-confirm="فصل الحساب وحذف رموز الوصول المخزّنة؟">{{ m.csrf() }}<button class="btn">فصل · Disconnect</button></form>{% endif %}</div></div>{% endfor %}</div>

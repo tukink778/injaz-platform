@@ -18,7 +18,7 @@ def run():
     jid = db.execute("SELECT id FROM jobs ORDER BY id LIMIT 1").fetchone()[0]
     uidx = db.execute("SELECT uid_idx FROM participants WHERE uid_idx!='' LIMIT 1").fetchone()[0]
     vals = dict(eid=eid, pid=pid, cid=cid, jid=jid, tid=1, uid_idx=uidx, token="x" * 20, code="AAAA-BBBB-CCCC", name="x" * 32, serial="S")
-    PUBLIC = ("public.", "auth.login", "static")
+    PUBLIC = ("public.", "auth.login", "static", "healthz")  # healthz: فحص جاهزية بلا بيانات ولا أسرار
     checked = dict(anon=0, org=0, view=0)
     for rule in app.url_map.iter_rules():
         ep = rule.endpoint

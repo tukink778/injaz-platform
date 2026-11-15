@@ -112,4 +112,7 @@ def account():
     pend = session.get("totp_pending")
     qr = totp_qr_uri(pend, u["username"]) if pend else None
     secret = dec(pend) if pend else None
-    return render_template("account.html", qr=qr, secret=secret)
+    from . import emailconn
+    can_email = u["role"] in ("admin", "manager", "organizer")
+    return render_template("account.html", qr=qr, secret=secret, can_email=can_email,
+                           email_providers=emailconn.account_view(db(), u["id"]) if can_email else [], email_https=emailconn.https_ok())

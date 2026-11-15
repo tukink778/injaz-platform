@@ -74,7 +74,8 @@ def test_all():
     assert "xlsx" in r.get_data(True)
     n = connect().execute("SELECT COUNT(*) FROM participants WHERE event_id=?", (eid,)).fetchone()[0]; assert n == 3, n
     # لا نصوص صريحة في قاعدة البيانات
-    raw = (pathlib.Path(d) / "injaz.db").read_bytes() + (pathlib.Path(d) / "injaz.db-wal").read_bytes() if (pathlib.Path(d) / "injaz.db-wal").exists() else (pathlib.Path(d) / "injaz.db").read_bytes()
+    import dbraw; from app.db import IS_PG
+    raw = dbraw.raw_db_bytes(d, connect, IS_PG)
     assert "عائشة".encode() not in raw and b"aaisha@example.com" not in raw and b"22S1234" not in raw
     # --- حقول الطالب الجديدة: التخزين الفعلي، القيم المطبَّعة، التعديل، الرفض عند النقص
     cdb = connect()
@@ -120,7 +121,7 @@ def test_all():
     assert certs[0]["serial"].startswith("TCGC-2026-")
     pdf = cl.get(f"/certs/{certs[0]['id']}.pdf"); assert pdf.data[:4] == b"%PDF"
     assert b"%PDF" not in (pathlib.Path(d) / "certs" / certs[0]["file"]).read_bytes()[:20]  # مشفّر على القرص
-    open("/tmp/w/sample_cert.pdf", "wb").write(pdf.data)
+    open(str(pathlib.Path(d) / "sample_cert.pdf"), "wb").write(pdf.data)
     # --- البحث والتصفية بالحقول الجديدة + صفحة الطالب + التذييل
     a1 = cl.get("/archive?gender=female").get_data(True); assert "عائشة ناصر العلوي" in a1 and "محمد سعيد الكندي" not in a1
     a2 = cl.get("/archive?nat=non_omani&acad=graduate").get_data(True); assert "محمد سعيد الكندي" in a2 and "عائشة ناصر العلوي" not in a2
