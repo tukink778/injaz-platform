@@ -31,7 +31,7 @@
  'mail':'M3 5h18v14H3zM3 7l9 7 9-7','search':'M11 18a7 7 0 100-14 7 7 0 000 14zM21 21l-5-5','dl':'M12 3v12M7 10l5 5 5-5M4 21h16','key':'M15 7a4 4 0 11-3.5 6L3 21v-3l2-2v-2h2v-2h2l2.4-2.4A4 4 0 0115 7z'
 } %}<svg class="ico" viewBox="0 0 24 24"><path d="{{ P[n] }}"/></svg>{% endmacro %}
 {% macro bars(items, cls='') %}{% set mx = (items|map(attribute=1)|max) if items else 1 %}
-{% for k,v in items %}<div class="bar {{cls}}"><span class="t1">{{ k }}</span><div class="t"><i style="width:{{ (100*v/mx)|round(1) }}%"></i></div><b>{{ v }}</b></div>{% else %}<div class="empty">لا توجد بيانات</div>{% endfor %}{% endmacro %}
+{% for k,v in items %}<div class="bar {{cls}}"><span class="t1">{{ k }}</span><div class="t"><i style="width:{{ (100*v/mx if mx else 0)|round(1) }}%"></i></div><b>{{ v }}</b></div>{% else %}<div class="empty">لا توجد بيانات</div>{% endfor %}{% endmacro %}
 {% macro filters(f, depts, years, specs, cats, show_status=True) %}
 <form method="get" class="card noprint" style="margin-bottom:16px"><div class="form-grid">
  <div class="fld"><label>بحث</label><input name="q" value="{{ f.q }}" placeholder="اسم، رقم جامعي، بريد، رقم شهادة…"></div>
