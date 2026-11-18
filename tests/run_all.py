@@ -10,7 +10,7 @@ if url:
     if "--i-know-this-is-a-test-db" not in sys.argv and not any(h in url for h in ("127.0.0.1", "localhost", "test")):
         sys.exit("رفض: الرابط لا يبدو قاعدة اختبار. أضف --i-know-this-is-a-test-db إن كنت متأكداً (تُنشأ schemas مؤقتة وتُحذف).")
 print("قاعدة البيانات:", "PostgreSQL" if url else "SQLite")
-for t in ("test_migrations.py", "test_templates.py", "test_e2e.py", "test_authz.py", "test_emailconn.py", "test_db_init.py", "test_postgres.py"):
+for t in ("test_migrations.py", "test_templates.py", "test_e2e.py", "test_authz.py", "test_emailconn.py", "test_trash.py", "test_db_init.py", "test_postgres.py"):
     if t == "test_postgres.py" and not url: continue
     env = dict(os.environ); schema = ""
     if url:

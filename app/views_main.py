@@ -13,10 +13,11 @@ bp = Blueprint("main", __name__)
 
 def _events_scope(alias="e"):
     s = dept_scope()
-    return (f" AND {alias}.dept_id=?", [s]) if s is not None else ("", [])
+    act = f" AND {alias}.deleted_at IS NULL"          # الفعاليات المحذوفة (السلة) لا تدخل أي قائمة أو إحصاء
+    return (f" AND {alias}.dept_id=?" + act, [s]) if s is not None else (act, [])
 
 
-ACTION_AR = {"event.create": "أنشأ فعالية", "event.edit": "عدّل فعالية", "event.delete": "حذف فعالية", "certs.issue": "أصدر شهادات", "import.confirm": "استورد مشاركين من Excel",
+ACTION_AR = {"event.create": "أنشأ فعالية", "event.edit": "عدّل فعالية", "event.delete": "نقل فعالية إلى السلة", "event.restore": "استعاد فعالية من السلة", "event.purge": "حذف فعالية نهائياً", "certs.issue": "أصدر شهادات", "import.confirm": "استورد مشاركين من Excel",
              "cert.revoke": "ألغى شهادة", "cert.resend": "أعاد إرسال شهادة", "reg.toggle": "غيّر حالة التسجيل", "part.add": "أضاف مشاركاً", "part.approve_all": "اعتمد المسجلين",
              "part.approve": "اعتمد مشاركين", "part.reject": "رفض مشاركين", "template.create": "أنشأ قالباً", "template.edit": "عدّل قالباً", "template.delete": "حذف قالباً",
              "template.duplicate": "نسخ قالباً", "user.create": "أضاف مستخدماً", "login": "سجّل الدخول", "mail.send": "أرسل شهادات بالبريد", "cert.zip": "صدّر شهادات ZIP"}
@@ -143,12 +144,62 @@ def event_edit(eid):
 @bp.route("/events/<int:eid>/delete", methods=["POST"])
 @roles("admin", "manager")
 def event_delete(eid):
+    """نقل الفعالية إلى سلة المحذوفات (حذف ناعم) — مسموح حتى بعد إصدار الشهادات. الصلاحية بالنطاق: المشرف العام كل الأقسام، ورئيس القسم قسمه فقط
+    (event_or_404 يُرجع 404 لغير نطاقه). لا يُحذف شيء فعلياً هنا؛ الحذف النهائي من السلة فقط (أو تلقائياً بعد المدة)."""
     ev = event_or_404(eid)
-    if db().execute("SELECT 1 FROM certificates WHERE event_id=?", (eid,)).fetchone():
-        flash("لا يمكن حذف فعالية صدرت لها شهادات (حفاظاً على الأرشيف). يمكنك إغلاقها", "err")
-        return redirect(url_for("main.event_view", eid=eid))
-    db().execute("DELETE FROM events WHERE id=?", (eid,)); audit("event.delete", f"event:{eid}", ev["title_ar"])
-    flash("تم حذف الفعالية", "ok"); return redirect(url_for("main.events"))
+    c = db()
+    with c.txn():
+        c.execute("UPDATE events SET deleted_at=?, deleted_by=?, reg_open=0 WHERE id=? AND deleted_at IS NULL", (int(time.time()), g.user["id"], eid))
+        audit("event.delete", f"event:{eid}", ev["title_ar"])
+    flash(f"نُقلت الفعالية «{ev['title_ar']}» إلى سلة المحذوفات، وتُحذف نهائياً تلقائياً بعد {services.trash_days(c)} أيام ما لم تُستعد", "ok")
+    return redirect(url_for("main.events"))
+
+
+# ---------- سلة المحذوفات ----------
+def _trash_rows(c):
+    s = dept_scope()
+    w, a = ("", []) if s is None else (" AND e.dept_id=?", [s])
+    return c.execute(f"""SELECT e.id, e.title_ar, e.event_date, e.deleted_at, d.name_ar dept_ar, u.full_name del_by,
+        (SELECT COUNT(*) FROM participants WHERE event_id=e.id) n_part,
+        (SELECT COUNT(*) FROM certificates WHERE event_id=e.id) n_cert
+        FROM events e JOIN departments d ON d.id=e.dept_id LEFT JOIN users u ON u.id=e.deleted_by
+        WHERE e.deleted_at IS NOT NULL{w} ORDER BY e.deleted_at DESC""", a).fetchall()
+
+
+@bp.route("/trash")
+@roles("admin", "manager")
+def trash():
+    c = db(); days = services.trash_days(c)
+    rows = [dict(r, left=max(0, days - (int(time.time()) - r["deleted_at"]) // 86400)) for r in _trash_rows(c)]
+    return render_template("trash.html", rows=rows, days=days)
+
+
+@bp.route("/events/<int:eid>/restore", methods=["POST"])
+@roles("admin", "manager")
+def event_restore(eid):
+    ev = event_or_404(eid, trashed=True)
+    with db().txn():
+        db().execute("UPDATE events SET deleted_at=NULL, deleted_by=NULL WHERE id=?", (eid,)); audit("event.restore", f"event:{eid}", ev["title_ar"])
+    flash(f"استُعيدت الفعالية «{ev['title_ar']}»", "ok")
+    return redirect(url_for("main.event_view", eid=eid))
+
+
+@bp.route("/trash/<int:eid>/purge", methods=["GET", "POST"])
+@roles("admin", "manager")
+def event_purge(eid):
+    """الحذف النهائي. GET: صفحة التأكيد الثاني (تفاصيل ما سيُمحى). POST: التنفيذ بعد تأكيد صريح (confirm=yes) — تُتحقق الصلاحية والنطاق في الخادم."""
+    ev = event_or_404(eid, trashed=True)
+    c = db()
+    if request.method == "POST":
+        if request.form.get("confirm") != "yes":
+            flash("لم يُؤكَّد الحذف النهائي", "err"); return redirect(url_for("main.event_purge", eid=eid))
+        res = services.purge_event(c, eid, user=g.user, reason="manual")
+        if not res: abort(404)
+        extra = f" (تعذّر حذف {res['file_errors']} ملف؛ راجع المسؤول)" if res["file_errors"] else ""
+        flash(f"تم الحذف النهائي للفعالية «{res['title']}» وجميع بياناتها: {res['participants']} مشارك، {res['certs']} شهادة، {res['files']} ملف{extra}", "ok")
+        return redirect(url_for("main.trash"))
+    n = c.execute("SELECT (SELECT COUNT(*) FROM participants WHERE event_id=?), (SELECT COUNT(*) FROM certificates WHERE event_id=?)", (eid, eid)).fetchone()
+    return render_template("trash_purge.html", ev=ev, n_part=n[0], n_cert=n[1])
 
 
 @bp.route("/events/<int:eid>")
@@ -403,7 +454,7 @@ def job_json(jid):
 
 
 def _cert_or_404(cid):
-    x = db().execute("SELECT x.*, e.dept_id FROM certificates x JOIN events e ON e.id=x.event_id WHERE x.id=?", (cid,)).fetchone()
+    x = db().execute("SELECT x.*, e.dept_id FROM certificates x JOIN events e ON e.id=x.event_id WHERE x.id=? AND e.deleted_at IS NULL", (cid,)).fetchone()
     if not x: abort(404)
     check_dept(x["dept_id"]); return x
 

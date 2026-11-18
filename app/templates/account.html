@@ -13,6 +13,6 @@
 {% elif qr %}<p>امسح الرمز بتطبيق Google Authenticator أو Microsoft Authenticator ثم أدخل الرمز:</p><div class="qr-big" style="padding:6px"><img src="{{ qr }}" alt="QR" style="width:180px"></div>
 <p class="small muted ltr" style="text-align:center">{{ secret }}</p>
 <form method="post">{{ m.csrf() }}<input type="hidden" name="act" value="2fa_confirm"><div class="fld"><input name="code" inputmode="numeric" class="ltr" placeholder="000000" required></div><button class="btn pri">تفعيل</button></form>
-{% else %}<p class="muted">طبقة حماية إضافية: بعد كلمة المرور يُطلب رمز يتغير كل 30 ثانية. يوصى به بشدة للمشرفين والمديرين.</p>
+{% else %}<p class="muted">طبقة حماية إضافية: بعد كلمة المرور يُطلب رمز يتغير كل 30 ثانية. يوصى به بشدة للمشرفين ورؤساء الأقسام.</p>
 <form method="post">{{ m.csrf() }}<input type="hidden" name="act" value="2fa_start"><button class="btn or">{{ m.ico('shield') }} بدء التفعيل</button></form>{% endif %}</div></div>
 {% if can_email %}{% include '_email_accounts.html' %}{% endif %}{% endblock %}

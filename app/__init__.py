@@ -43,6 +43,23 @@ def create_app():
     c.close()
 
     app.teardown_appcontext(dbm.close_db)
+    _purge_state = {"t": 0.0}
+
+    def _auto_purge():
+        """الحذف التلقائي للفعاليات التي انتهت مدتها في السلة: عند الإقلاع ثم مرة كل 10 دقائق (تُفحص في أول طلب بعدها). لا يعطّل الطلب عند الفشل."""
+        import time as _t
+        if _t.time() - _purge_state["t"] < 600: return
+        _purge_state["t"] = _t.time()
+        try:
+            from . import services
+            c2 = dbm.connect()
+            try: services.maybe_purge(c2)
+            finally: c2.close()
+        except Exception:
+            import logging; logging.getLogger("injaz").exception("auto purge failed")
+
+    with app.app_context():
+        _auto_purge()
 
     @app.get("/healthz")
     def healthz():
@@ -63,6 +80,7 @@ def create_app():
     def _before():
         if request.endpoint in ("static", "healthz"): return
         load_user(); csrf_protect()
+        _auto_purge()
         if g.user and g.user["role"] == "admin" and request.endpoint not in ("auth.account", "auth.logout") and not g.user["must_change_pw"]:
             from .db import setting
             if setting(dbm.db(), "require_2fa", "0") == "1" and not g.user["totp_secret"]:

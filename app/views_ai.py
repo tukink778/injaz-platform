@@ -32,7 +32,7 @@ def ai_required(f):
 # ---------------------------------------------------------------- مساعد إنجاز
 def _scope():
     s = dept_scope()
-    return ("", []) if s is None else (" AND e.dept_id=?", [s])
+    return (" AND e.deleted_at IS NULL", []) if s is None else (" AND e.dept_id=? AND e.deleted_at IS NULL", [s])
 
 
 def _norm_q(q):

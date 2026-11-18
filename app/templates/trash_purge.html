@@ -1,0 +1,8 @@
+{% extends "base.html" %}{% block title %}حذف نهائي{% endblock %}
+{% block content %}<div class="top"><div><h1>الحذف النهائي للفعالية</h1><p class="muted">{{ ev.title_ar }} — {{ ev.dept_ar }}</p></div></div>
+<div class="card" style="max-width:680px"><div class="flash err"><b>تحذير: لا يمكن التراجع عن هذه العملية.</b></div>
+<p>سيُحذف نهائياً من النظام كل ما يتعلق بهذه الفعالية:</p>
+<ul><li><b>{{ n_part }}</b> مشارك (بياناتهم الشخصية المشفّرة)</li><li><b>{{ n_cert }}</b> شهادة صادرة وملفات PDF الخاصة بها</li><li>رسائل البريد المحفوظة لها (إن وُجدت) وسجلات مهامها</li></ul>
+<p class="small muted">بعد الحذف لن يعمل رابط التحقق من أي شهادة صادرة من هذه الفعالية، وتبقى في سجل التدقيق عبارة عن «حذف نهائي» دون بيانات شخصية.</p>
+<form method="post">{{ m.csrf() }}<label class="chk"><input type="checkbox" name="confirm" value="yes" required> أفهم أن الحذف نهائي ولا يمكن استرجاع الفعالية ولا شهاداتها</label>
+<div class="btns" style="margin-top:12px"><button class="btn danger" data-confirm="تأكيد أخير: حذف «{{ ev.title_ar }}» وجميع بياناتها نهائياً؟">{{ m.ico('trash') }} حذف نهائي</button><a class="btn" href="{{ url_for('main.trash') }}">إلغاء</a></div></form></div>{% endblock %}

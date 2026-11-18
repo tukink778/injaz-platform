@@ -6,7 +6,7 @@ from .security import dec, check_dept, dept_scope
 CATEGORIES = {"training": "تدريب (ورش ودورات)", "career": "توجيه وظيفي", "academic": "أنشطة أكاديمية (محاضرات وندوات)",
               "initiative": "مبادرات وبرامج طلابية", "event": "فعاليات (مؤتمرات وملتقيات)", "partnership": "شراكات وبرامج مشتركة"}
 STATUS_AR = {"draft": "مسودة", "open": "التسجيل مفتوح", "closed": "مغلقة", "issued": "صدرت الشهادات"}
-ROLE_AR = {"admin": "مشرف عام", "manager": "مدير قسم/مركز", "organizer": "منظم فعاليات", "viewer": "مطّلع (قراءة فقط)"}
+ROLE_AR = {"admin": "مشرف عام", "manager": "رئيس قسم", "organizer": "منظم فعاليات", "viewer": "مطّلع (قراءة فقط)"}
 P_STATUS = {"pending": "قيد المراجعة", "approved": "معتمد", "rejected": "مرفوض"}
 
 EMAIL_RE = re.compile(r"^[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}$")
@@ -23,9 +23,10 @@ def valid_name(n):
     return 3 <= len(n) <= 120 and bool(re.search(r"[A-Za-z؀-ۿ]", n)) and not re.search(r"[<>{}=@]", n)
 
 
-def event_or_404(eid):
+def event_or_404(eid, trashed=False):
+    """الفعالية بحسب نطاق قسم المستخدم. المحذوفة (في السلة) لا تُرى إلا بـ trashed=True (صفحات السلة فقط) والعكس صحيح."""
     e = db().execute("SELECT e.*, d.name_ar dept_ar, d.name_en dept_en, d.code dept_code FROM events e JOIN departments d ON d.id=e.dept_id WHERE e.id=?", (eid,)).fetchone()
-    if not e: abort(404)
+    if not e or (e["deleted_at"] is not None) != trashed: abort(404)
     check_dept(e["dept_id"])
     return e
 

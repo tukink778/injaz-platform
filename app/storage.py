@@ -27,6 +27,13 @@ class LocalStorage:
     def exists(self, serial) -> bool:
         return self.path(serial).is_file()
 
+    def delete(self, serial) -> bool:
+        """يحذف ملف الشهادة (إن وُجد). يعيد True عند الحذف أو عدم وجود الملف أصلاً."""
+        try:
+            self.path(serial).unlink(missing_ok=True); return True
+        except OSError:
+            return False
+
 
 def _make():
     if config.Cfg.STORAGE_BACKEND != "local":

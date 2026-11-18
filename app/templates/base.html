@@ -10,6 +10,7 @@
  <a href="{{ url_for('main.dashboard') }}" class="{{ 'on' if ep=='main.dashboard' }}" title="الرئيسية">{{ m.ico('home') }}<span class="lbl">الرئيسية</span></a>
  <a href="{{ url_for('main.events') }}" class="{{ 'on' if ep.startswith('main.event') or ep in ('main.flow','main.import_view','main.job_page') }}" title="الفعاليات">{{ m.ico('cal') }}<span class="lbl">الفعاليات</span></a>
  <a href="{{ url_for('reports.archive') }}" class="{{ 'on' if ep in ('reports.archive','reports.person') }}" title="الأرشيف">{{ m.ico('arch') }}<span class="lbl">الأرشيف</span></a>
+ {% if g.user.role in ('admin','manager') %}<a href="{{ url_for('main.trash') }}" class="{{ 'on' if ep in ('main.trash','main.event_purge') }}" title="سلة المحذوفات">{{ m.ico('trash') }}<span class="lbl">سلة المحذوفات</span></a>{% endif %}
  <a href="{{ url_for('reports.stats') }}" class="{{ 'on' if ep=='reports.stats' }}" title="الإحصائيات">{{ m.ico('chart') }}<span class="lbl">الإحصائيات</span></a>
  {% if ai_on %}<div class="sec">الذكاء</div>
  <a href="{{ url_for('ai.assistant') }}" class="{{ 'on' if ep=='ai.assistant' }}" title="مساعد إنجاز">{{ m.ico('spark') }}<span class="lbl">مساعد إنجاز</span></a>

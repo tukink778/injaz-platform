@@ -1,0 +1,8 @@
+{% extends "base.html" %}{% block title %}سلة المحذوفات{% endblock %}
+{% block content %}<div class="top"><div><h1>{{ m.ico('trash') }} سلة المحذوفات</h1><p class="muted">الفعاليات المحذوفة لا تظهر في الفعاليات ولا الأرشيف ولا الإحصائيات ولا البحث. تُحذف نهائياً تلقائياً بعد <b>{{ days }}</b> أيام من حذفها، ويمكنك استعادتها قبل ذلك أو حذفها نهائياً الآن.</p></div></div>
+<div class="card">{% if rows %}<div class="tbl-wrap"><table><tr><th>الفعالية</th><th>القسم</th><th>تاريخ الحذف</th><th>حذفها</th><th>المحتوى</th><th>المتبقي</th><th></th></tr>
+{% for r in rows %}<tr><td><b>{{ r.title_ar }}</b><br><span class="small muted">{{ r.event_date }}</span></td><td>{{ r.dept_ar }}</td><td class="small">{{ ts_fmt(r.deleted_at) }}</td><td class="small">{{ r.del_by or '—' }}</td>
+<td class="small">{{ r.n_part }} مشارك · {{ r.n_cert }} شهادة</td><td><span class="badge {{ 'err' if r.left<=1 else 'warn' }}">{{ r.left }} يوم</span></td>
+<td><div class="btns"><form method="post" action="{{ url_for('main.event_restore', eid=r.id) }}">{{ m.csrf() }}<button class="btn sm" data-confirm="استعادة الفعالية «{{ r.title_ar }}»؟">{{ m.ico('refresh') }} استعادة</button></form>
+<a class="btn sm danger" href="{{ url_for('main.event_purge', eid=r.id) }}">{{ m.ico('trash') }} حذف نهائي</a></div></td></tr>{% endfor %}</table></div>
+{% else %}{{ m.empty('trash', 'السلة فارغة', 'الفعاليات التي تحذفها ستظهر هنا مؤقتاً قبل حذفها نهائياً.') }}{% endif %}</div>{% endblock %}

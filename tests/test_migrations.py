@@ -21,7 +21,7 @@ def run():
     r = c.execute("SELECT * FROM participants").fetchone()
     assert r["name_enc"] == "enc-old" and r["specialization"] == "نظم" and (r["academic_status"], r["gender"], r["nationality"]) == ("", "", ""), "السجل القديم تغيّر"
     D.run_migrations(c); D.run_migrations(c)  # idempotent
-    assert c.execute("SELECT COUNT(*) FROM schema_migrations").fetchone()[0] == 2
+    assert c.execute("SELECT COUNT(*) FROM schema_migrations").fetchone()[0] == 3
     t = set(c.tables())
     assert {"user_email_connections", "oauth_states"} <= t
     cols = c.columns("user_email_connections")

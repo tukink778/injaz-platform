@@ -105,4 +105,5 @@ class Cfg:
     DB_SCHEMA = env("INJAZ_DB_SCHEMA")                                # اختياري: schema مخصص بدل public (للاختبار/العزل)
     STORAGE_BACKEND = env("INJAZ_STORAGE_BACKEND", "local")           # local فقط حالياً (انظر app/storage.py)
     TRUSTED_PROXY = env("INJAZ_TRUSTED_PROXY")                        # عنوان/عناوين الوكيل الموثوق (يُستخدم مع INJAZ_BEHIND_PROXY=1)
+    TRASH_DAYS = max(1, int(env("INJAZ_TRASH_DAYS", "7")))              # مدة بقاء الفعاليات المحذوفة قبل الحذف النهائي التلقائي (تُعدَّل من الإعدادات أيضاً)
     PROXY_COUNT = int(env("INJAZ_PROXY_COUNT", "0"))                  # عدد الوكلاء الموثوقين أمام التطبيق (مهم لعنوان العميل الحقيقي)

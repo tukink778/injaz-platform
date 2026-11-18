@@ -10,10 +10,20 @@ bp = Blueprint("admin", __name__, url_prefix="/admin")
 
 
 # ---------- المستخدمون ----------
+def _credentials(username, password, full_name, role, kind):
+    """بيانات الدخول المؤقتة تُعرض مرة واحدة في بطاقة (لا تُخزَّن ولا تُسجَّل) مع رسالة جاهزة للإرسال. المستخدم يُجبر على تغيير كلمة المرور عند أول دخول."""
+    from .config import Cfg
+    url = Cfg.BASE_URL + "/login"
+    head = "تم إنشاء حسابك" if kind == "create" else "تمت إعادة تعيين كلمة مرور حسابك"
+    msg = (f"السلام عليكم {full_name}،\n{head} في منصة إنجاز (الدور: {ROLE_AR.get(role, role)}).\n\n"
+           f"رابط الدخول: {url}\nاسم المستخدم: {username}\nكلمة المرور المؤقتة: {password}\n\n"
+           "سيُطلب منك تغيير كلمة المرور عند أول تسجيل دخول. يرجى عدم مشاركة هذه البيانات مع أحد.")
+    return dict(username=username, password=password, full_name=full_name, role_ar=ROLE_AR.get(role, role), url=url, message=msg, kind=kind)
+
 @bp.route("/users", methods=["GET", "POST"])
 @roles("admin")
 def users():
-    c = db(); newpw = None
+    c = db(); newpw = None; cred = None
     if request.method == "POST":
         f = request.form; act = f.get("act")
         if act == "create":
@@ -25,15 +35,16 @@ def users():
                 newpw = secrets.token_urlsafe(12) + "aA1"
                 c.execute("INSERT INTO users(username,full_name,email,pw_hash,role,dept_id,must_change_pw,created_at) VALUES(?,?,?,?,?,?,1,?)",
                           (un, clean_text(f.get("full_name"), 80) or un, clean_text(f.get("email"), 120), hash_pw(newpw), role, dept, int(time.time())))
-                audit("user.create", un, role); flash(f"أُنشئ المستخدم «{un}». كلمة المرور المؤقتة تظهر مرة واحدة أدناه", "ok")
-                newpw = (un, newpw)
+                audit("user.create", un, role); flash(f"أُنشئ المستخدم «{un}». بيانات الدخول تظهر مرة واحدة في البطاقة أدناه", "ok")
+                cred = _credentials(un, newpw, clean_text(f.get("full_name"), 80) or un, role, "create")
         else:
             u = c.execute("SELECT * FROM users WHERE id=?", (int(f.get("uid") or 0),)).fetchone()
             if not u: abort(404)
             if act == "reset":
                 pw = secrets.token_urlsafe(12) + "aA1"
                 c.execute("UPDATE users SET pw_hash=?, must_change_pw=1, session_ver=session_ver+1, failed=0, locked_until=0 WHERE id=?", (hash_pw(pw), u["id"]))
-                audit("user.reset", u["username"]); flash("أُعيد تعيين كلمة المرور", "ok"); newpw = (u["username"], pw)
+                audit("user.reset", u["username"]); flash("أُعيد تعيين كلمة المرور. بيانات الدخول الجديدة في البطاقة أدناه", "ok")
+                cred = _credentials(u["username"], pw, u["full_name"], u["role"], "reset")
             elif act == "toggle" and u["id"] != g.user["id"]:
                 c.execute("UPDATE users SET active=1-active, session_ver=session_ver+1 WHERE id=?", (u["id"],)); audit("user.toggle", u["username"])
             elif act == "unlock":
@@ -45,7 +56,7 @@ def users():
                 c.execute("UPDATE users SET role=?, dept_id=?, session_ver=session_ver+1 WHERE id=?", (f["role"], dept, u["id"])); audit("user.role", u["username"], f["role"])
     us = c.execute("SELECT u.*, d.name_ar dept_ar FROM users u LEFT JOIN departments d ON d.id=u.dept_id ORDER BY u.id").fetchall()
     depts = c.execute("SELECT * FROM departments WHERE active=1 ORDER BY name_ar").fetchall()
-    return render_template("admin_users.html", us=us, depts=depts, roles=ROLE_AR, newpw=newpw)
+    return render_template("admin_users.html", us=us, depts=depts, roles=ROLE_AR, cred=cred)
 
 
 # ---------- الأقسام ----------
@@ -251,7 +262,7 @@ def template_edit(tid):
 @roles("admin")
 def settings():
     c = db()
-    keys = ["email_subject", "email_body", "attach_pdf", "token_days", "survey_url", "verify_name_mode", "require_2fa", "ai_enabled"]
+    keys = ["email_subject", "email_body", "attach_pdf", "token_days", "survey_url", "verify_name_mode", "require_2fa", "ai_enabled", "trash_days"]
     if request.method == "POST":
         f = request.form
         set_setting(c, "email_subject", clean_text(f.get("email_subject"), 200) or services.DEFAULT_SUBJECT)
@@ -261,13 +272,14 @@ def settings():
         sv = clean_text(f.get("survey_url"), 300)
         set_setting(c, "survey_url", sv if sv.startswith("https://") or not sv else "")
         set_setting(c, "verify_name_mode", f.get("verify_name_mode") if f.get("verify_name_mode") in ("masked", "full", "hidden") else "masked")
+        set_setting(c, "trash_days", str(max(1, min(365, int(f.get("trash_days") or services.trash_days(c))))))
         set_setting(c, "require_2fa", "1" if f.get("require_2fa") else "0")
         set_setting(c, "ai_enabled", "1" if f.get("ai_enabled") else "0")
         audit("settings.update"); flash("تم حفظ الإعدادات", "ok")
         return redirect(url_for("admin.settings"))
     s = {k: setting(c, k, "") for k in keys}
     s["email_subject"] = s["email_subject"] or services.DEFAULT_SUBJECT; s["email_body"] = s["email_body"] or services.DEFAULT_BODY
-    s["token_days"] = s["token_days"] or "90"; s["ai_enabled"] = s["ai_enabled"] or "1"; s["verify_name_mode"] = s["verify_name_mode"] or "masked"
+    s["trash_days"] = s["trash_days"] or str(services.trash_days(c)); s["token_days"] = s["token_days"] or "90"; s["ai_enabled"] = s["ai_enabled"] or "1"; s["verify_name_mode"] = s["verify_name_mode"] or "masked"
     from .config import Cfg
     return render_template("admin_settings.html", s=s, Cfg=Cfg)
 

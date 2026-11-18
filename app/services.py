@@ -329,3 +329,69 @@ def send_plain(to_addr, subject, body, tag):
         s.send_message(msg)
     finally:
         s.quit()
+
+
+# ---------------------------------------------------------------- سلة المحذوفات (حذف ناعم → حذف نهائي)
+SYSTEM_USER = {"id": None, "username": "system"}
+
+
+def trash_days(c) -> int:
+    """مدة بقاء الفعالية المحذوفة (أيام) قبل الحذف النهائي التلقائي: الإعداد في القاعدة ثم INJAZ_TRASH_DAYS (الافتراضي 7)."""
+    try:
+        return max(1, min(365, int(setting(c, "trash_days", "") or Cfg.TRASH_DAYS)))
+    except ValueError:
+        return Cfg.TRASH_DAYS
+
+
+def purge_event(c, eid, *, user=None, reason="manual"):
+    """حذف نهائي لا رجعة فيه لفعالية: المشاركون والشهادات وملفات PDF المشفّرة ورسائل outbox المرتبطة بها.
+    - الفعالية يجب أن تكون في السلة (deleted_at غير فارغ) وإلا يُرفض (حماية من الحذف المباشر للفعاليات الفعّالة).
+    - ترتيب الحذف يراعي المفاتيح الخارجية، داخل معاملة واحدة؛ والملفات تُحذف بعد نجاح المعاملة (فشل المعاملة لا يترك سجلات تشير لملفات ممسوحة).
+    - سجل التدقيق يُبقي أثراً بلا بيانات شخصية (العنوان والأعداد فقط). يعيد dict بالأعداد أو None إن لم تكن الفعالية في السلة."""
+    from .security import audit
+    ev = c.execute("SELECT id, title_ar FROM events WHERE id=? AND deleted_at IS NOT NULL", (eid,)).fetchone()
+    if not ev:
+        return None
+    serials = [r["serial"] for r in c.execute("SELECT serial FROM certificates WHERE event_id=?", (eid,)).fetchall()]
+    with c.txn(immediate=True):
+        n_cert = c.execute("DELETE FROM certificates WHERE event_id=?", (eid,)).rowcount
+        n_part = c.execute("DELETE FROM participants WHERE event_id=?", (eid,)).rowcount
+        c.execute("DELETE FROM jobs WHERE event_id=?", (eid,))
+        c.execute("DELETE FROM events WHERE id=?", (eid,))
+        audit("event.purge", f"event:{eid}", f"{ev['title_ar']} | participants={n_part} certs={n_cert} | {reason}", conn=c, user=user or SYSTEM_USER)
+    failed = 0
+    for s in serials:
+        if not storage.certs.delete(s): failed += 1
+        try: (DATA / "outbox" / f"{s}.eml").unlink(missing_ok=True)
+        except OSError: failed += 1
+    return dict(participants=n_part, certs=n_cert, files=len(serials), file_errors=failed, title=ev["title_ar"])
+
+
+def purge_expired_trash(c, *, force=False):
+    """يحذف نهائياً الفعاليات التي مضى على وضعها في السلة أكثر من trash_days. يعمل بلا تدخل: عند الإقلاع، وبشكل دوري أثناء التشغيل،
+    ويدوياً بـ manage.py purge-trash. آمن للتكرار ولتشغيل أكثر من نسخة (الحذف متماثل: ما حُذف لا يُحذف ثانية)."""
+    limit = int(time.time()) - trash_days(c) * 86400
+    n = 0
+    for r in c.execute("SELECT id FROM events WHERE deleted_at IS NOT NULL AND deleted_at<=? ORDER BY id", (limit,)).fetchall():
+        try:
+            if purge_event(c, r["id"], reason=f"auto>{trash_days(c)}d"): n += 1
+        except Exception:
+            import logging; logging.getLogger("injaz").exception("purge failed for event %s", r["id"])
+    return n
+
+
+def maybe_purge(c, every=600):
+    """يُستدعى من الطلبات: ينفّذ purge_expired_trash مرة كل `every` ثانية على الأكثر (مطالبة ذرّية عبر جدول settings)."""
+    now = int(time.time())
+    last = int(setting(c, "trash_last_purge", "0") or 0)
+    if now - last < every:
+        return 0
+    from .db import set_setting
+    with c.txn():
+        row = c.execute("UPDATE settings SET value=? WHERE key='trash_last_purge' AND CAST(value AS INTEGER)=?", (str(now), last)) if last else None
+        if not last:
+            try: set_setting(c, "trash_last_purge", str(now))
+            except Exception: return 0
+        elif row.rowcount != 1:
+            return 0                  # نسخة أخرى سبقتنا
+    return purge_expired_trash(c)

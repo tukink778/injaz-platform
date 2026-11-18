@@ -18,7 +18,7 @@ def _filters():
 
 
 def _where(f):
-    w, a = "", []
+    w, a = " AND e.deleted_at IS NULL", []      # الفعاليات المحذوفة (السلة) خارج الأرشيف والبحث والإحصاءات دائماً
     s = dept_scope()
     if s is not None: w += " AND e.dept_id=?"; a.append(s)
     elif f["dept"].isdigit(): w += " AND e.dept_id=?"; a.append(int(f["dept"]))
@@ -61,8 +61,8 @@ def _search(f, limit=500):
 def _filter_opts():
     c = db(); s = dept_scope()
     depts = c.execute("SELECT * FROM departments ORDER BY name_ar").fetchall() if s is None else c.execute("SELECT * FROM departments WHERE id=?", (s,)).fetchall()
-    years = [r[0] for r in c.execute("SELECT DISTINCT substr(event_date,1,4) FROM events ORDER BY 1 DESC")]
-    specs = [r[0] for r in c.execute("SELECT DISTINCT specialization FROM participants WHERE specialization!='' ORDER BY 1")]
+    years = [r[0] for r in c.execute("SELECT DISTINCT substr(event_date,1,4) FROM events WHERE deleted_at IS NULL ORDER BY 1 DESC")]
+    specs = [r[0] for r in c.execute("SELECT DISTINCT p.specialization FROM participants p JOIN events e ON e.id=p.event_id WHERE p.specialization!='' AND e.deleted_at IS NULL ORDER BY 1")]
     return depts, years, specs
 
 
@@ -81,7 +81,7 @@ def archive():
 def person(uid_idx):
     if not re.fullmatch(r"[0-9a-f]{32}", uid_idx): abort(404)
     s = dept_scope()
-    w = " AND e.dept_id=?" if s is not None else ""
+    w = (" AND e.dept_id=?" if s is not None else "") + " AND e.deleted_at IS NULL"
     rows = db().execute(BASE_Q + " AND (p.uid_idx=? OR p.email_idx=?)" + w + " ORDER BY e.event_date DESC", (uid_idx, uid_idx, *([s] if s is not None else []))).fetchall()
     if not rows: abort(404)
     out = [dict(r, name=dec(r["name_enc"]), uid=dec(r["uid_enc"])) for r in rows]

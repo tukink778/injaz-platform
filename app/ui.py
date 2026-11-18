@@ -21,8 +21,8 @@ def ai_allowed():
 
 
 def notifications():
-    c = db(); s = dept_scope(); w, a = ("", [])
-    if s is not None: w, a = " AND e.dept_id=?", [s]
+    c = db(); s = dept_scope(); w, a = (" AND e.deleted_at IS NULL", [])
+    if s is not None: w, a = " AND e.dept_id=? AND e.deleted_at IS NULL", [s]
     out = []
     r = c.execute(f"SELECT e.id, e.title_ar, COUNT(*) n FROM participants p JOIN events e ON e.id=p.event_id WHERE p.status='pending'{w} GROUP BY e.id ORDER BY n DESC", a).fetchall()
     for x in r[:3]:

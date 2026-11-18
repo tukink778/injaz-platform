@@ -41,9 +41,9 @@ def fake_pkg(tag, slow=1.5):
 def engine_checks(D, label):
     """يُشغَّل داخل العملية الحالية على الاتصال الحالي (SQLite أو PG/schema مخصص)."""
     D.init_db(); c = D.connect()
-    n = c.execute("SELECT COUNT(*) FROM schema_migrations").fetchone()[0]; assert n == 2, n
+    n = c.execute("SELECT COUNT(*) FROM schema_migrations").fetchone()[0]; assert n == 3, n
     D.init_db(); D.run_migrations(c)                                   # إعادة التشغيل: لا إعادة تطبيق
-    assert c.execute("SELECT COUNT(*) FROM schema_migrations").fetchone()[0] == 2
+    assert c.execute("SELECT COUNT(*) FROM schema_migrations").fetchone()[0] == 3
     pkg = fake_pkg(label)
     errs = []
     def w():
@@ -93,12 +93,12 @@ def run():
         with psycopg.connect(ci, autocommit=True) as c:
             assert c.execute("SELECT count(*) FROM information_schema.tables WHERE table_schema=%s AND table_name='users'", (sch,)).fetchone()[0] == 1
             assert c.execute("SELECT count(*) FROM information_schema.tables WHERE table_schema='public'").fetchone()[0] == 0, "جداول تسرّبت إلى public"
-            assert c.execute(f'SELECT count(*) FROM "{sch}".schema_migrations').fetchone()[0] == 2
+            assert c.execute(f'SELECT count(*) FROM "{sch}".schema_migrations').fetchone()[0] == 3
             t0 = c.execute(f'SELECT count(*) FROM "{sch}".templates').fetchone()[0]
         # ---- 2) إعادة التشغيل: لا إعادة تطبيق ولا إعادة بذر
         out, _ = done(sub(BOOT, env)); assert "BOOT-OK" in out
         with psycopg.connect(ci, autocommit=True) as c:
-            assert c.execute(f'SELECT count(*) FROM "{sch}".schema_migrations').fetchone()[0] == 2
+            assert c.execute(f'SELECT count(*) FROM "{sch}".schema_migrations').fetchone()[0] == 3
             assert c.execute(f'SELECT count(*) FROM "{sch}".templates').fetchone()[0] == t0
         # ---- 3) اسم schema خبيث يُرفض قبل أي SQL
         for bad in ('x"; DROP TABLE users;--', "a b", "pg_catalog", "1abc", "x" * 64):
@@ -109,7 +109,7 @@ def run():
         for p in ps: out, err = done(p); assert "BOOT-OK" in out, err[-800:]
         with psycopg.connect(ci2, autocommit=True) as c:
             names = [r[0] for r in c.execute("SELECT name FROM schema_migrations ORDER BY name")]
-            assert names == ["m0002_student_fields", "m0003_email_connections"], names
+            assert names == ["m0002_student_fields", "m0003_email_connections", "m0004_event_trash"], names
             assert c.execute("SELECT count(*) FROM departments").fetchone()[0] == 1, "البذر تكرر عند التزامن"
             assert c.execute("SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_name='users'").fetchone()[0] == 1
         # ---- 5) محرك الهجرات تحت التزامن/الفشل على: public (قاعدة جديدة) ثم schema مخصص

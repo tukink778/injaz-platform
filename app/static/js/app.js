@@ -24,7 +24,7 @@
     var nt=t.closest('[data-nt]');if(nt){var p=nt.nextElementSibling;var show=p.hidden;closePanels(show?p:null);p.hidden=!show;nt.setAttribute('aria-expanded',show)}
     else if(!t.closest('.drop-panel')&&!t.closest('.gsearch'))closePanels();
     var x=t.closest('.toast [data-x]');if(x)x.parentNode.remove();
-    var cp=t.closest('[data-copy]');if(cp){navigator.clipboard&&navigator.clipboard.writeText(cp.getAttribute('data-copy'));var o=cp.textContent;cp.textContent='تم النسخ ✓';setTimeout(function(){cp.textContent=o},1500)}
+    var cp=t.closest('[data-copy]');if(cp){navigator.clipboard&&navigator.clipboard.writeText(cp.getAttribute('data-copy'));var o=cp.innerHTML;cp.textContent='تم النسخ ✓';setTimeout(function(){cp.innerHTML=o},1500)}
     var ep=t.closest('[data-edit-part]');if(ep){var dg=$('#dlg-edit');if(dg&&dg.showModal){var fm=$('form',dg);fm.action=ep.getAttribute('data-action');['name','name_en','uid','email','spec','acad','gender','nat'].forEach(function(k){if(fm.elements[k])fm.elements[k].value=ep.getAttribute('data-'+k)||''});dg.showModal()}}
     if(t.closest('[data-dlg-close]')){var dd=t.closest('dialog');dd&&dd.close()}
     if(t.closest('[data-print]'))window.print();

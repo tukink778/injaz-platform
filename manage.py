@@ -155,6 +155,12 @@ if __name__ == "__main__":
     elif cmd == "demo": demo()
     elif cmd == "backup": create_app(); backup()
     elif cmd == "restore" and args: restore(args[0])
+    elif cmd == "purge-trash":
+        # حذف نهائي للفعاليات التي تجاوزت مدة السلة الآن (يعمل تلقائياً أيضاً أثناء تشغيل الخدمة).
+        app = create_app()
+        with app.app_context():
+            from app import services
+            print("حُذفت نهائياً:", services.purge_expired_trash(connect()), "فعالية")
     elif cmd == "migrate": create_app(); print("الهجرات مطبّقة:", [r[0] for r in connect().execute("SELECT name FROM schema_migrations ORDER BY name")])
     elif cmd == "verify-audit":
         create_app(); ok, bad = audit_verify(connect()); print("سجل التدقيق سليم ✔" if ok else f"⚠ تم العبث بالسجل عند السطر {bad}")

@@ -27,7 +27,7 @@ def _reg_state(ev):
 @bp.route("/r/<token>", methods=["GET", "POST"])
 def register(token):
     c = db()
-    ev = c.execute("SELECT e.*, d.name_ar dept_ar, d.name_en dept_en FROM events e JOIN departments d ON d.id=e.dept_id WHERE reg_token=?", (token,)).fetchone()
+    ev = c.execute("SELECT e.*, d.name_ar dept_ar, d.name_en dept_en FROM events e JOIN departments d ON d.id=e.dept_id WHERE reg_token=? AND e.deleted_at IS NULL", (token,)).fetchone()
     if not ev: abort(404)
     state = _reg_state(ev)
     if state != "open": return render_template("reg_closed.html", ev=ev, state=state)
@@ -73,7 +73,7 @@ def verify(code):
     if rate_hit("verify:" + client_ip(), 60, 300): abort(429)
     code = code.upper()[:20]
     x = db().execute("""SELECT x.*, e.title_ar, e.title_en, e.event_date, e.end_date, e.hours, d.name_ar dept_ar, d.name_en dept_en
-        FROM certificates x JOIN events e ON e.id=x.event_id JOIN departments d ON d.id=e.dept_id WHERE x.verify_code=?""", (code,)).fetchone()
+        FROM certificates x JOIN events e ON e.id=x.event_id JOIN departments d ON d.id=e.dept_id WHERE x.verify_code=? AND e.deleted_at IS NULL""", (code,)).fetchone()
     mode = setting(db(), "verify_name_mode", "masked")
     name = ""
     if x:
@@ -84,7 +84,7 @@ def verify(code):
 @bp.route("/get/<token>")
 def get_cert(token):
     if rate_hit("get:" + client_ip(), 60, 300): abort(429)
-    x = db().execute("SELECT * FROM certificates WHERE dl_hash=? AND dl_expires>?", (token_hash(token), int(time.time()))).fetchone()
+    x = db().execute("SELECT x.* FROM certificates x JOIN events e ON e.id=x.event_id WHERE x.dl_hash=? AND x.dl_expires>? AND e.deleted_at IS NULL", (token_hash(token), int(time.time()))).fetchone()
     if not x or x["status"] != "valid": return render_template("get_invalid.html"), 404
     db().execute("UPDATE certificates SET downloads=downloads+1 WHERE id=?", (x["id"],))
     return Response(services.read_cert_pdf(x), mimetype="application/pdf", headers={"Content-Disposition": f"attachment; filename={x['serial']}.pdf"})
@@ -97,7 +97,7 @@ def portal():
         if rate_hit("portal:ip:" + client_ip(), 8, 3600): abort(429)
         v = clean_text(request.form.get("q"), 120)
         ui, ei = blind("u", v), blind("e", v.lower())
-        rows = db().execute("SELECT DISTINCT email_enc FROM participants WHERE (uid_idx=? AND uid_idx!='') OR (email_idx=? AND email_idx!='')", (ui, ei)).fetchall()
+        rows = db().execute("SELECT DISTINCT email_enc FROM participants WHERE event_id IN (SELECT id FROM events WHERE deleted_at IS NULL) AND ((uid_idx=? AND uid_idx!='') OR (email_idx=? AND email_idx!=''))", (ui, ei)).fetchall()
         emails = {dec(r[0]) for r in rows if r[0]}
         emails = {e for e in emails if EMAIL_RE.match(e)}
         if emails and not rate_hit("portal:q:" + (ui or ei), 3, 3600):
@@ -115,7 +115,7 @@ def _portal_certs(token):
     pt = db().execute("SELECT * FROM portal_tokens WHERE token_hash=? AND expires>?", (token_hash(token), int(time.time()))).fetchone()
     if not pt: abort(404)
     return db().execute("""SELECT x.*, e.title_ar, e.event_date, e.hours FROM certificates x JOIN participants p ON p.id=x.participant_id JOIN events e ON e.id=x.event_id
-        WHERE x.status='valid' AND ((p.uid_idx=? AND p.uid_idx!='') OR (p.email_idx=? AND p.email_idx!='')) ORDER BY e.event_date DESC""", (pt["uid_idx"], pt["email_idx"])).fetchall()
+        WHERE x.status='valid' AND e.deleted_at IS NULL AND ((p.uid_idx=? AND p.uid_idx!='') OR (p.email_idx=? AND p.email_idx!='')) ORDER BY e.event_date DESC""", (pt["uid_idx"], pt["email_idx"])).fetchall()
 
 
 @bp.route("/my/<token>")

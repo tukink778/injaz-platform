@@ -19,7 +19,7 @@ def run():
     have = set(c.tables()); assert want <= have, want - have
     # 3) الهجرات مرة واحدة + تكرار آمن
     n1 = c.execute("SELECT COUNT(*) FROM schema_migrations").fetchone()[0]; D.run_migrations(c); D.run_migrations(c); D.init_db()
-    assert c.execute("SELECT COUNT(*) FROM schema_migrations").fetchone()[0] == n1 == 2
+    assert c.execute("SELECT COUNT(*) FROM schema_migrations").fetchone()[0] == n1 == 3
     assert {"academic_status", "gender", "nationality"} <= c.columns("participants")
     # هوية تلقائية + RETURNING
     a = c.insert("INSERT INTO templates(name,config,created_at) VALUES('a','{}',0)", ()); b = c.insert("INSERT INTO templates(name,config,created_at) VALUES('b','{}',0)", ())
